@@ -316,7 +316,7 @@ tklock_map_cb (GtkWidget *widget, GdkEvent *event, gpointer user_data)
   gtk_grab_add(widget);
 }
 
-gboolean sub_3B18(tklock *gp_tklock)
+gboolean tklock_one_input_mode_finished_handler(tklock *gp_tklock)
 {
   g_assert(gp_tklock != NULL);
   g_assert(gp_tklock->window != NULL);
@@ -351,7 +351,7 @@ gboolean tklock_key_press_cb(GtkWidget *widget, GdkEvent *event, gpointer user_d
 
   if(gp_tklock->mode != TKLOCK_MODE_NONE)
   {
-    sub_3B18(gp_tklock);
+    tklock_one_input_mode_finished_handler(gp_tklock);
     return TRUE;
   }
 
@@ -412,7 +412,7 @@ tklock_button_cb(GtkWidget *widget, GdkEvent *event, gpointer user_data)
   }
   else if(event->button.type == GDK_BUTTON_RELEASE)
   {
-    sub_3B18(gp_tklock);
+    tklock_one_input_mode_finished_handler(gp_tklock);
     /* FIXME */
     gp_tklock->button_event = 2;
   }

@@ -1,20 +1,6 @@
-osso-systemui-alarm (0.3.2) unstable; urgency=low
-
-  * Do not leak PangoFontMetrics object in size_request_cb
-  * Do not dereference uninitialized pointer in snooze_timeout
-  * Check if we have valid notification/filter attached when removing an alarm from the list
-
- -- Ivaylo Dimmitrov <freemangordon@abv.bg>  Thu, 16 Nov 2012 14:33:17 +0200
-
-osso-systemui-alarm (0.3.1) unstable; urgency=low
-
-  * Do not leak NotifyNotification objects
-
- -- Ivaylo Dimmitrov <freemangordon@abv.bg>  Thu, 16 Nov 2012 09:17:23 +0200
-
-osso-systemui-alarm (0.3) unstable; urgency=low
+osso-systemui-tklock (0.2.2.18+0m5) unstable; urgency=low
 
   * First RE release
 
- -- Ivaylo Dimmitrov <freemangordon@abv.bg>  Thu, 16 Aug 2012 11:49:51 +0300
+ -- Ivaylo Dimmitrov <freemangordon@abv.bg>  Sun, 25 Nov 2012 14:37:23 +0200
 
