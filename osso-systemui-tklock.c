@@ -113,6 +113,12 @@ static void
 vtklock_unlock_handler();
 static void
 visual_tklock_set_unlock_handler(vtklock_t *vtklock, void(*unlock_handler)());
+static gboolean
+slider_change_value_cb(GtkRange *range, GtkScrollType scroll, gdouble value, gpointer user_data);
+static void
+slider_value_changed_cb(GtkRange *range, gpointer user_data);
+static gboolean
+vtklock_key_cb(GtkWidget *widget, GdkEvent *event, gpointer user_data);
 
 static void
 tklock_destroy_hamm_window();
@@ -339,7 +345,8 @@ gboolean tklock_one_input_mode_finished_handler(tklock *gp_tklock)
   return FALSE;
 }
 
-gboolean tklock_key_press_cb(GtkWidget *widget, GdkEvent *event, gpointer user_data)
+static gboolean
+tklock_key_press_cb(GtkWidget *widget, GdkEvent *event, gpointer user_data)
 {
   tklock *gp_tklock;
   DBusMessage *message;
@@ -700,7 +707,6 @@ tklock_create_hamm_window()
 
   XMatchVisualInfo(dpy, DefaultScreen(dpy), 32, VisualDepthMask, &vinfo);
 
-  /* FIXME WTF, hamm_window is NULL here? */
   cmap = XCreateColormap(dpy, DefaultRootWindow(dpy), vinfo.visual, AllocNone);
 
   attributes.colormap = cmap;
@@ -709,7 +715,6 @@ tklock_create_hamm_window()
   attributes.border_pixel = 0;
   attributes.background_pixel = 0;
 
-  /* FIXME WTF, hamm_window is NULL here? */
   plugin_data->hamm_window =  XCreateWindow(dpy,
                                             DefaultRootWindow(dpy),
                                             0, 0,
@@ -1253,7 +1258,7 @@ vtklock_create_date_time_widget(vtklockts *ts, gboolean landscape)
 
   font_desc = pango_font_description_new();
   pango_font_description_set_family(font_desc, "Nokia Sans");
-  pango_font_description_set_absolute_size(font_desc, 768 * PANGO_SCALE);
+  pango_font_description_set_absolute_size(font_desc, 75 * PANGO_SCALE);
 
   time_label = gtk_label_new("vt");
   gtk_widget_modify_font(time_label, font_desc);
@@ -1272,8 +1277,8 @@ vtklock_create_date_time_widget(vtklockts *ts, gboolean landscape)
   gtk_box_pack_start(GTK_BOX(time_box), time_label, TRUE, TRUE, FALSE);
   gtk_box_pack_start(GTK_BOX(date_box), date_label, TRUE, TRUE, FALSE);
 
-  gtk_box_pack_start(GTK_BOX(box), date_box, FALSE, FALSE, FALSE);
   gtk_box_pack_start(GTK_BOX(box), time_box, FALSE, FALSE, FALSE);
+  gtk_box_pack_start(GTK_BOX(box), date_box, FALSE, FALSE, FALSE);
 
   ts->date_label=date_label;
   ts->time_label=time_label;
@@ -1309,12 +1314,15 @@ vtklock_create_event_icons(vtklock_t *vtklock, GtkWidget *parent, gboolean lands
     gchar count_str[10];
     const char *icon_name;
 
+    if(!vtklock->event[i].count)
+      continue;
+
     icon_name = get_icon_name(i);
     g_assert(icon_name != NULL);
 
     font_desc = pango_font_description_new();
     pango_font_description_set_family(font_desc, "Nokia Sans");
-    pango_font_description_set_absolute_size(font_desc, 256 * PANGO_SCALE);
+    pango_font_description_set_absolute_size(font_desc, 25 * PANGO_SCALE);
 
     g_assert(g_snprintf(count_str, sizeof(count_str), "%d", vtklock->event[i].count) != 0);
 
@@ -1365,11 +1373,15 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
   GdkPixbuf *pixbuf;
   GdkPixmap *bg_pixmap = NULL;
   GtkWidget *alignment;
+  GtkWidget *window_alignment;
   GtkWidget *label;
+  GtkWidget *label_align;
+  GtkWidget *label_packer;
   GtkWidget *timestamp_packer;
   GtkWidget *timestamp_packer_align;
   GtkWidget *icon_packer;
   GtkWidget *icon_packer_align;
+  GtkRequisition slider_requisition;
 
   if(vtklock->window)
     return;
@@ -1465,27 +1477,81 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
 
   gtk_container_add(GTK_CONTAINER(timestamp_packer_align), timestamp_packer);
 
-  if(!landscape)
-    icon_packer = gtk_hbox_new(TRUE, 40);
-  else
-    icon_packer = gtk_vbox_new(TRUE, 40);
+  if(event_count)
+  {
+    if(!landscape)
+      icon_packer = gtk_hbox_new(TRUE, 40);
+    else
+      icon_packer = gtk_vbox_new(TRUE, 40);
 
-  g_assert(icon_packer != NULL);
+    g_assert(icon_packer != NULL);
 
-  vtklock_create_event_icons(vtklock, icon_packer, landscape);
+    vtklock_create_event_icons(vtklock, icon_packer, landscape);
 
-  if(landscape)
-    icon_packer_align = gtk_alignment_new(0, 0.5, 0, 0);
-  else
-    icon_packer_align = gtk_alignment_new(0.5, 0, 0, 0);
+    if(landscape)
+      icon_packer_align = gtk_alignment_new(0, 0.5, 0, 0);
+    else
+      icon_packer_align = gtk_alignment_new(0.5, 0, 0, 0);
 
-  gtk_container_add(GTK_CONTAINER(icon_packer_align), icon_packer);
+    gtk_container_add(GTK_CONTAINER(icon_packer_align), icon_packer);
+  }
 
   if(!landscape)
   {
-
+    label_align = gtk_alignment_new(1.0, 0.5, 0, 0);
+    gtk_container_add(GTK_CONTAINER(label_align), label);
+    label_packer = gtk_hbox_new(FALSE, 24);
+  }
+  else
+  {
+    label_align = gtk_alignment_new(0.5, 0.0, 0, 0);
+    gtk_container_add(GTK_CONTAINER(label_align), label);
+    label_packer = gtk_vbox_new(FALSE, 24);
   }
 
+  if(event_count)
+  {
+    if(!landscape)
+      gtk_box_pack_start(GTK_BOX(label_packer), icon_packer_align, FALSE, FALSE, FALSE);
+    else
+      gtk_box_pack_end(GTK_BOX(label_packer), icon_packer_align, FALSE, FALSE, FALSE);
+  }
+
+  if(!landscape)
+  {
+    gtk_box_pack_start(GTK_BOX(label_packer), label_align, FALSE, FALSE, FALSE);
+    gtk_box_pack_start(GTK_BOX(label_packer), alignment, FALSE, FALSE, FALSE);
+    gtk_box_pack_start(GTK_BOX(label_packer), timestamp_packer_align, FALSE, FALSE, FALSE);
+    window_alignment = gtk_alignment_new(0.5, 0, 0, 0);
+    gtk_alignment_set_padding(GTK_ALIGNMENT(alignment), 8, 24, 1, 0);
+  }
+  else
+  {
+    gtk_box_pack_end(GTK_BOX(label_packer), label_align, FALSE, FALSE, FALSE);
+    gtk_box_pack_end(GTK_BOX(label_packer), alignment, FALSE, FALSE, FALSE);
+    gtk_box_pack_end(GTK_BOX(label_packer), timestamp_packer_align, FALSE, FALSE, FALSE);
+    window_alignment = gtk_alignment_new(0.5, 0, 0, 0);
+    gtk_alignment_set_padding(GTK_ALIGNMENT(alignment), 0, 0, 0, 16);
+  }
+
+  gtk_container_add(GTK_CONTAINER(window_alignment), label_packer);
+
+  gtk_container_add(GTK_CONTAINER(vtklock->window), window_alignment);
+
+  g_signal_connect_data(vtklock->slider, "change-value", G_CALLBACK(slider_change_value_cb), vtklock, NULL, 0);
+  g_signal_connect_data(vtklock->slider, "value-changed", G_CALLBACK(slider_value_changed_cb), vtklock, NULL, 0);
+
+  g_signal_connect_data(vtklock->window, "key-press-event", G_CALLBACK(vtklock_key_cb), vtklock, NULL, 0);
+  g_signal_connect_data(vtklock->window, "key-release-event", G_CALLBACK(vtklock_key_cb), vtklock, NULL, 0);
+
+  gtk_widget_show_all(window_alignment);
+
+  gtk_widget_size_request(vtklock->slider, &slider_requisition);
+
+  if(!event_count)
+  {
+
+  }
 }
 
 static gboolean
@@ -1545,7 +1611,6 @@ visual_tklock_present_view(vtklock_t *vtklock)
 static void
 vtklock_unlock_handler()
 {
-  /* FIXME */
   systemui_do_callback( &system_ui_callback, plugin_data->data, 1);
 }
 
@@ -1554,4 +1619,26 @@ visual_tklock_set_unlock_handler(vtklock_t *vtklock, void(*unlock_handler)())
 {
   g_assert(vtklock != NULL);
   vtklock->unlock_handler = unlock_handler;
+}
+
+static gboolean
+slider_change_value_cb(GtkRange     *range,
+                       GtkScrollType scroll,
+                       gdouble       value,
+                       gpointer      user_data)
+{
+  return TRUE;
+}
+
+static void
+slider_value_changed_cb(GtkRange *range,
+                        gpointer  user_data)
+{
+
+}
+
+static gboolean
+vtklock_key_cb(GtkWidget *widget, GdkEvent *event, gpointer user_data)
+{
+  return TRUE;
 }
