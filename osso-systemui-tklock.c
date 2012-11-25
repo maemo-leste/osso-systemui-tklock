@@ -973,6 +973,21 @@ vtklock_remove_clockd_dbus_filter(vtklock_t *vtklock)
                                 vtklock);
 }
 
+static void
+vtklock_add_clockd_dbus_filter(vtklock_t *vtklock)
+{
+  g_assert(vtklock->systemui_conn != NULL);
+
+  dbus_bus_remove_match(vtklock->systemui_conn,
+                        "type='signal',sender='com.nokia.clockd',interface='com.nokia.clockd',path='/com/nokia/clockd',member='time_changed'",
+                        NULL);
+  if( !dbus_connection_add_filter(vtklock->systemui_conn,
+                                  vtklock_dbus_filter,
+                                  vtklock,
+                                  NULL))
+    SYSLOG_WARNING("failed to install dbus message filter");
+}
+
 void plugin_close(system_ui_data *data)
 {
   if(plugin_data->data != data)
@@ -1367,6 +1382,23 @@ vtklock_create_event_icons(vtklock_t *vtklock, GtkWidget *parent, gboolean lands
 }
 
 static void
+visual_tklock_set_hildon_flags(GtkWidget *window, gboolean landscape)
+{
+  g_assert(window);
+  /* FIXME */
+  gdk_atom_intern_static_string("_HILDON_WM_ACTION_NO_TRANSITIONS");
+  gtk_window_fullscreen(GTK_WINDOW(window));
+  gtk_window_set_skip_taskbar_hint(GTK_WINDOW(window), TRUE);
+  hildon_gtk_window_set_do_not_disturb(GTK_WINDOW(window), TRUE);
+
+  if(landscape)
+  {
+    gdk_atom_intern_static_string("_HILDON_PORTRAIT_MODE_SUPPORT");
+    gdk_atom_intern_static_string("_HILDON_PORTRAIT_MODE_REQUEST");
+  }
+}
+
+static void
 visual_tklock_create_view_whimsy(vtklock_t *vtklock)
 {
   gboolean landscape;
@@ -1550,8 +1582,14 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
 
   if(!event_count)
   {
-
+    /*FIXME TODO*/
   }
+
+  gtk_widget_realize(vtklock->window);
+
+  visual_tklock_set_hildon_flags(vtklock->window, landscape);
+  gtk_widget_show_all(vtklock->window);
+  vtklock_add_clockd_dbus_filter(vtklock);
 }
 
 static gboolean
