@@ -1,0 +1,47 @@
+#!/usr/bin/make -f
+# Sample debian/rules that uses debhelper.
+# This file was originally written by Joey Hess and Craig Small.
+
+CFLAGS := -ggdb
+
+# Use thumb mode if it enabled.
+ifneq (,$(findstring thumb,$(DEB_BUILD_OPTIONS)))
+	CFLAGS += -mthumb
+endif
+
+ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
+	CFLAGS += -O0
+else
+	CFLAGS += -O2
+endif
+
+build:
+	dh_testdir
+	CFLAGS="$(CFLAGS)" $(MAKE)
+
+clean:
+	dh_testdir
+	dh_testroot
+	$(MAKE) clean
+	dh_clean
+
+binary: build
+	dh_testdir
+	dh_testroot
+	dh_clean -k
+	dh_installdirs
+	$(MAKE) DESTDIR=$(PWD)/debian/osso-systemui-alarm/ install
+	dh_install
+	dh_installchangelogs
+	dh_installdocs
+	dh_link
+	dh_strip
+	dh_compress
+	dh_fixperms
+	dh_installdeb
+	dh_shlibdeps
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+.PHONY: build clean binary
