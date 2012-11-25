@@ -481,7 +481,7 @@ gp_tklock_init(DBusConnection *systemui_conn)
 
   gp_tklock = g_slice_alloc0(sizeof(tklock));
 
-  if(gp_tklock)
+  if(!gp_tklock)
   {
     SYSLOG_ERROR("failed to allocate memory");
     return NULL;
@@ -524,6 +524,7 @@ tklock_open_handler(const char *interface,
                     system_ui_handler_arg *out)
 {
   int supported_args[3] = {'u', 'b', 'b'};
+  system_ui_handler_arg* hargs = ((system_ui_handler_arg*)args->data);
   int rv;
 
   if( !check_plugin_arguments(args, supported_args, 1) &&
@@ -534,7 +535,7 @@ tklock_open_handler(const char *interface,
     return 0;
   }
 
-  if(args->len == 4)
+  if(hargs[4].data.u32 == 4)
   {
     if(plugin_data->gp_tklock == NULL)
       plugin_data->gp_tklock = gp_tklock_init(data->session_bus);
@@ -546,7 +547,7 @@ tklock_open_handler(const char *interface,
       gp_tklock_set_one_input_mode_handler(plugin_data->gp_tklock,one_input_mode_handler);
 
   }
-  else if(args->len == 5)
+  else if(hargs[4].data.u32 == 5)
   {
     tklock_destroy_hamm_window();
     if(!plugin_data->vtklock)
@@ -570,7 +571,7 @@ tklock_open_handler(const char *interface,
       gp_tklock_disable_lock(plugin_data->gp_tklock);
     }
   }
-  else if(args->len == 1)
+  else if(hargs[4].data.u32 == 1)
   {
     if(plugin_data->cb_argc == 4)
     {
@@ -667,10 +668,11 @@ tklock_close_handler(const char *interface,
 
     if(!plugin_data->gp_tklock->window_hidden)
       gp_tklock_destroy_lock(plugin_data->gp_tklock);
+
+    plugin_data->gp_tklock->mode = TKLOCK_MODE_NONE;
+    plugin_data->gp_tklock->button_event = 0;
   }
 
-  plugin_data->gp_tklock->mode = TKLOCK_MODE_NONE;
-  plugin_data->gp_tklock->button_event = 0;
 
   if(plugin_data->vtklock)
     visual_tklock_destroy_lock(plugin_data->vtklock);
@@ -690,6 +692,7 @@ tklock_create_hamm_window()
   Colormap cmap;
   XSetWindowAttributes attributes;
   Atom atom_fullscreen;
+
   const guint layer = 10;
 
   dpy = gdk_x11_display_get_xdisplay(gdk_display_get_default());
@@ -698,7 +701,7 @@ tklock_create_hamm_window()
   XMatchVisualInfo(dpy, DefaultScreen(dpy), 32, VisualDepthMask, &vinfo);
 
   /* FIXME WTF, hamm_window is NULL here? */
-  cmap = XCreateColormap(dpy, plugin_data->hamm_window, vinfo.visual, AllocNone);
+  cmap = XCreateColormap(dpy, DefaultRootWindow(dpy), vinfo.visual, AllocNone);
 
   attributes.colormap = cmap;
   attributes.override_redirect = 1;
@@ -708,7 +711,7 @@ tklock_create_hamm_window()
 
   /* FIXME WTF, hamm_window is NULL here? */
   plugin_data->hamm_window =  XCreateWindow(dpy,
-                                            plugin_data->hamm_window,
+                                            DefaultRootWindow(dpy),
                                             0, 0,
                                             gdk_screen_get_width(screen), gdk_screen_get_height(screen),
                                             0,
@@ -725,11 +728,11 @@ tklock_create_hamm_window()
     return;
   }
 
-  atom_fullscreen = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", 0);
+  atom_fullscreen = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);
 
   XChangeProperty(dpy,
                   plugin_data->hamm_window,
-                  XInternAtom(dpy, "_NET_WM_STATE", 0),
+                  XInternAtom(dpy, "_NET_WM_STATE", False),
                   XA_ATOM,
                   32,
                   PropModeReplace,
@@ -738,7 +741,7 @@ tklock_create_hamm_window()
 
   XChangeProperty(dpy,
                   plugin_data->hamm_window,
-                  XInternAtom(dpy, "_HILDON_STACKING_LAYER", 0),
+                  XInternAtom(dpy, "_HILDON_STACKING_LAYER", False),
                   XA_CARDINAL,
                   32,
                   PropModeReplace,
@@ -771,6 +774,12 @@ tklock_setup_plugin(system_ui_data *data)
     return FALSE;
   }
   plugin_data->data = data;
+
+  plugin_data->field_1C = 0;
+  plugin_data->second_press_tag = 0;
+  plugin_data->gp_tklock = NULL;
+  plugin_data->vtklock = NULL;
+
   return TRUE;
 }
 
@@ -994,7 +1003,7 @@ visual_tklock_new(tklock *gp_tklock)
 {
   vtklock_t *vtklock;
 
-  vtklock = g_slice_alloc0(sizeof(vtklock));
+  vtklock = g_slice_alloc0(sizeof(vtklock_t));
 
   if(!vtklock)
   {
@@ -1276,7 +1285,7 @@ static const char *
 get_icon_name(guint index)
 {
   const char *icon_names[]={
-    "tasklaunch_sms_chat"
+    "tasklaunch_sms_chat",
     "tasklaunch_authorization_response",
     "general_chatroom_invitation",
     "general_application_call",
