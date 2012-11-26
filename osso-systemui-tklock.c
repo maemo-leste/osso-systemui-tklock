@@ -1398,14 +1398,37 @@ visual_tklock_set_hildon_flags(GtkWidget *window, gboolean landscape)
   }
 }
 
+static GtkWidget *
+visual_tklock_create_slider(gboolean landscape)
+{
+  GtkWidget *slider;
+
+  slider  = landscape?hildon_gtk_hscale_new():hildon_gtk_vscale_new();
+  g_object_set(slider, "jump-to-position", FALSE, NULL);
+
+  gtk_widget_set_name(slider, landscape?"sui-tklock-slider":"sui-tklock-slider-portrait");
+
+
+  if(!landscape)
+    gtk_widget_set_size_request(slider, -1, 440);
+  else
+    gtk_widget_set_size_request(slider, 440, -1);
+
+  gtk_range_set_update_policy(GTK_RANGE(slider), GTK_UPDATE_DISCONTINUOUS);
+  gtk_range_set_range(GTK_RANGE(slider),0.0, 40.0);
+  gtk_range_set_value(GTK_RANGE(slider), 3.0);
+
+  return slider;
+}
+
 static void
 visual_tklock_create_view_whimsy(vtklock_t *vtklock)
 {
   gboolean landscape;
   GdkPixbuf *pixbuf;
   GdkPixmap *bg_pixmap = NULL;
-  GtkWidget *alignment;
-  GtkWidget *window_alignment;
+  GtkWidget *slider_align;
+  GtkWidget *window_align;
   GtkWidget *label;
   GtkWidget *label_align;
   GtkWidget *label_packer;
@@ -1465,25 +1488,12 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
     gtk_widget_modify_bg(vtklock->window, GTK_STATE_NORMAL, &color);
   }
 
-  vtklock->slider = hildon_gtk_vscale_new();
-  g_object_set(vtklock->slider, "jump-to-position", FALSE, NULL);
-
-  gtk_widget_set_name(vtklock->slider, landscape?"sui-tklock-slider":"sui-tklock-slider-portrait");
-
-  alignment = gtk_alignment_new(0.5,0.5,0,0);
-
-  if(!landscape)
-    gtk_widget_set_size_request(vtklock->slider, -1, 440);
-  else
-    gtk_widget_set_size_request(vtklock->slider, 440, -1);
-
-  gtk_range_set_update_policy(GTK_RANGE(vtklock->slider), GTK_UPDATE_DISCONTINUOUS);
-  gtk_range_set_range(GTK_RANGE(vtklock->slider),0.0, 40.0);
-  gtk_range_set_value(GTK_RANGE(vtklock->slider), 3.0);
+  vtklock->slider = visual_tklock_create_slider(landscape);
 
   vtklock->slider_reset = TRUE;
 
-  gtk_container_add(GTK_CONTAINER(alignment), vtklock->slider);
+  slider_align = gtk_alignment_new(0.5,0.5,0,0);
+  gtk_container_add(GTK_CONTAINER(slider_align), vtklock->slider);
 
   vtklock->slider_adjustment = gtk_range_get_adjustment(GTK_RANGE(vtklock->slider));
 
@@ -1552,23 +1562,23 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
   if(!landscape)
   {
     gtk_box_pack_start(GTK_BOX(label_packer), label_align, FALSE, FALSE, FALSE);
-    gtk_box_pack_start(GTK_BOX(label_packer), alignment, FALSE, FALSE, FALSE);
+    gtk_box_pack_start(GTK_BOX(label_packer), slider_align, FALSE, FALSE, FALSE);
     gtk_box_pack_start(GTK_BOX(label_packer), timestamp_packer_align, FALSE, FALSE, FALSE);
-    window_alignment = gtk_alignment_new(0.5, 0, 0, 0);
-    gtk_alignment_set_padding(GTK_ALIGNMENT(alignment), 8, 24, 1, 0);
+    window_align = gtk_alignment_new(0.5, 0, 0, 0);
+    gtk_alignment_set_padding(GTK_ALIGNMENT(window_align), 8, 24, 1, 0);
   }
   else
   {
     gtk_box_pack_end(GTK_BOX(label_packer), label_align, FALSE, FALSE, FALSE);
-    gtk_box_pack_end(GTK_BOX(label_packer), alignment, FALSE, FALSE, FALSE);
+    gtk_box_pack_end(GTK_BOX(label_packer), slider_align, FALSE, FALSE, FALSE);
     gtk_box_pack_end(GTK_BOX(label_packer), timestamp_packer_align, FALSE, FALSE, FALSE);
-    window_alignment = gtk_alignment_new(0.5, 0, 0, 0);
-    gtk_alignment_set_padding(GTK_ALIGNMENT(alignment), 0, 0, 0, 16);
+    window_align = gtk_alignment_new(0.5, 0, 0, 0);
+    gtk_alignment_set_padding(GTK_ALIGNMENT(window_align), 0, 0, 0, 16);
   }
 
-  gtk_container_add(GTK_CONTAINER(window_alignment), label_packer);
+  gtk_container_add(GTK_CONTAINER(window_align), label_packer);
 
-  gtk_container_add(GTK_CONTAINER(vtklock->window), window_alignment);
+  gtk_container_add(GTK_CONTAINER(vtklock->window), window_align);
 
   g_signal_connect_data(vtklock->slider, "change-value", G_CALLBACK(slider_change_value_cb), vtklock, NULL, 0);
   g_signal_connect_data(vtklock->slider, "value-changed", G_CALLBACK(slider_value_changed_cb), vtklock, NULL, 0);
@@ -1576,11 +1586,11 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
   g_signal_connect_data(vtklock->window, "key-press-event", G_CALLBACK(vtklock_key_cb), vtklock, NULL, 0);
   g_signal_connect_data(vtklock->window, "key-release-event", G_CALLBACK(vtklock_key_cb), vtklock, NULL, 0);
 
-  gtk_widget_show_all(window_alignment);
+  gtk_widget_show_all(window_align);
 
   gtk_widget_size_request(vtklock->slider, &slider_requisition);
 
-  if(!event_count)
+  if(event_count)
   {
     /*FIXME TODO*/
   }
