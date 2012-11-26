@@ -978,7 +978,7 @@ vtklock_add_clockd_dbus_filter(vtklock_t *vtklock)
 {
   g_assert(vtklock->systemui_conn != NULL);
 
-  dbus_bus_remove_match(vtklock->systemui_conn,
+  dbus_bus_add_match(vtklock->systemui_conn,
                         "type='signal',sender='com.nokia.clockd',interface='com.nokia.clockd',path='/com/nokia/clockd',member='time_changed'",
                         NULL);
   if( !dbus_connection_add_filter(vtklock->systemui_conn,
@@ -1106,7 +1106,7 @@ visual_tklock_destroy_lock(vtklock_t *vtklock)
   vtklock->slider_adjustment = NULL;
   vtklock->window = NULL;
   vtklock->ts.date_label = NULL;
-  vtklock->ts.date_label = NULL;
+  vtklock->ts.time_label = NULL;
   vtklock->slider = NULL;
 }
 
@@ -1561,9 +1561,9 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
 
   if(!landscape)
   {
-    gtk_box_pack_start(GTK_BOX(label_packer), label_align, FALSE, FALSE, FALSE);
-    gtk_box_pack_start(GTK_BOX(label_packer), slider_align, FALSE, FALSE, FALSE);
     gtk_box_pack_start(GTK_BOX(label_packer), timestamp_packer_align, FALSE, FALSE, FALSE);
+    gtk_box_pack_start(GTK_BOX(label_packer), slider_align, FALSE, FALSE, FALSE);
+    gtk_box_pack_start(GTK_BOX(label_packer), label_align, FALSE, FALSE, FALSE);
     window_align = gtk_alignment_new(0.5, 0, 0, 0);
     gtk_alignment_set_padding(GTK_ALIGNMENT(window_align), 8, 24, 1, 0);
   }
@@ -1593,6 +1593,22 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
   if(event_count)
   {
     /*FIXME TODO*/
+  }
+  else
+  {
+/*    GtkRequisition r;
+
+    gtk_widget_size_request(label, &r);
+    if(landscape == 0)
+    {
+      480-slider_requisition.height
+          gtk_alignment_set_padding(GTK_ALIGNMENT(label_align),
+
+    }
+    else
+    {
+
+    }*/
   }
 
   gtk_widget_realize(vtklock->window);
