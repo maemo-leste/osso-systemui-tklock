@@ -55,10 +55,10 @@ typedef struct
 
 typedef struct
 {
-	char *interface;
-	char *path;
-	char *bus_name;
-	char *method;
+  char *interface;
+  char *path;
+  char *destination;
+  char *method;
 } system_ui_callback_t;
 
 extern void nsv_sv_init(void*);
@@ -88,9 +88,9 @@ extern int
 check_set_callback(GArray *args, system_ui_callback_t *callback);
 
 extern void
-systemui_do_callback( system_ui_callback_t *callback, system_ui_data *data, guint argc);
+systemui_do_callback(system_ui_data *data, system_ui_callback_t *callback, guint argc);
 extern void
-do_callback(system_ui_callback_t *callback, system_ui_data *data, guint argc);
+do_callback(system_ui_data *data, system_ui_callback_t *callback, guint argc);
 
 extern void
 systemui_free_callback(system_ui_callback_t *callback);

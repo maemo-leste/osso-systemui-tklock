@@ -518,8 +518,8 @@ static void gp_tklock_set_one_input_mode_handler(tklock *gp_tklock, void (*handl
 static void
 one_input_mode_handler()
 {
-  systemui_do_callback( &system_ui_callback, plugin_data->data, 1);
-  systemui_do_callback( &system_ui_callback, plugin_data->data, 4);
+  systemui_do_callback(plugin_data->data, &system_ui_callback, 1);
+  systemui_do_callback(plugin_data->data, &system_ui_callback, 4);
   systemui_free_callback(&system_ui_callback);
 }
 
@@ -582,7 +582,7 @@ tklock_open_handler(const char *interface,
   {
     if(plugin_data->cb_argc == 4)
     {
-      do_callback(&system_ui_callback, plugin_data->data, plugin_data->cb_argc);
+      do_callback(plugin_data->data, &system_ui_callback, plugin_data->cb_argc);
     }
     else if(plugin_data->cb_argc != 5)
     {
@@ -1694,7 +1694,7 @@ visual_tklock_present_view(vtklock_t *vtklock)
 static void
 vtklock_unlock_handler()
 {
-  systemui_do_callback( &system_ui_callback, plugin_data->data, 1);
+  systemui_do_callback( plugin_data->data, &system_ui_callback, 1);
 }
 
 static void
