@@ -67,14 +67,14 @@ typedef struct {
   GtkWidget *window;
   vtklockts ts;
   GtkWidget *slider;
-  gboolean slider_reset;
+  guint slider_status;
   int field_14;
   gdouble slider_value;
   GtkAdjustment *slider_adjustment;
   DBusConnection *systemui_conn;
   int priority;
   guint update_date_time_cb_tag;
-  void(*unlock_handler);
+  void(*unlock_handler)();
   int field_34;
   event_t event[6];
 }vtklock_t;
@@ -937,7 +937,7 @@ tklock_dbus_filter(DBusConnection *connection, DBusMessage *message, void *user_
         else
         {
           tklock_destroy_hamm_window();
-          plugin_data->display_off = TRUE;
+          plugin_data->display_off = FALSE;
         }
     }
   }
@@ -1245,12 +1245,13 @@ gboolean vtklock_reset_slider_position(vtklock_t *vtklock)
   g_assert(vtklock->slider != NULL && GTK_IS_RANGE(vtklock->slider));
 
   vtklock->slider_value = 3.0;
+  vtklock->slider_status = 1;
   gtk_range_set_value(GTK_RANGE(vtklock->slider), vtklock->slider_value);
 
   return TRUE;
 }
 static GtkWidget *
-vtklock_create_date_time_widget(vtklockts *ts, gboolean landscape)
+vtklock_create_date_time_widget(vtklockts *ts, gboolean portrait)
 {
   GtkWidget *box,*time_box,*date_box;
   GtkWidget *date_label, *time_label;
@@ -1258,7 +1259,7 @@ vtklock_create_date_time_widget(vtklockts *ts, gboolean landscape)
 
   g_assert(ts != NULL && ts->time_label == NULL && ts->date_label == NULL);
 
-  if(!landscape)
+  if(portrait)
   {
     box = gtk_hbox_new(FALSE, 4);
     time_box = gtk_vbox_new(TRUE, 0);
@@ -1284,10 +1285,10 @@ vtklock_create_date_time_widget(vtklockts *ts, gboolean landscape)
   hildon_helper_set_logical_color(date_label, GTK_RC_FG, GTK_STATE_NORMAL, "SecondaryTextColor");
   hildon_helper_set_logical_color(date_label, GTK_RC_FG, GTK_STATE_PRELIGHT, "SecondaryTextColor");
 
-  if(!landscape)
+  if(portrait)
   {
-    gtk_label_set_angle(GTK_LABEL(date_label), 270.0);
-    gtk_label_set_angle(GTK_LABEL(time_label), 270.0);
+    gtk_label_set_angle(GTK_LABEL(date_label), 90.0);
+    gtk_label_set_angle(GTK_LABEL(time_label), 90.0);
   }
   gtk_box_pack_start(GTK_BOX(time_box), time_label, TRUE, TRUE, FALSE);
   gtk_box_pack_start(GTK_BOX(date_box), date_label, TRUE, TRUE, FALSE);
@@ -1316,7 +1317,7 @@ get_icon_name(guint index)
 }
 
 static void
-vtklock_create_event_icons(vtklock_t *vtklock, GtkWidget *parent, gboolean landscape)
+vtklock_create_event_icons(vtklock_t *vtklock, GtkWidget *parent, gboolean portrait)
 {
   int i;
   for(i=0; i<6; i++)
@@ -1353,11 +1354,11 @@ vtklock_create_event_icons(vtklock_t *vtklock, GtkWidget *parent, gboolean lands
                                     GTK_ICON_LOOKUP_NO_SVG,
                                     NULL);
 
-    if(pixbuf && !landscape)
+    if(pixbuf && portrait)
     {
       GdkPixbuf *pixbuf_rotated;
 
-      gtk_label_set_angle(GTK_LABEL(count_label), 270.0);
+      gtk_label_set_angle(GTK_LABEL(count_label), 90.0);
       pixbuf_rotated = gdk_pixbuf_rotate_simple(pixbuf, GDK_PIXBUF_ROTATE_CLOCKWISE);
       g_object_unref(pixbuf);
       pixbuf = pixbuf_rotated;
@@ -1370,7 +1371,7 @@ vtklock_create_event_icons(vtklock_t *vtklock, GtkWidget *parent, gboolean lands
 
     g_object_unref(pixbuf);
 
-    if(!landscape)
+    if(portrait)
       packer = gtk_hbox_new(TRUE, 40);
     else
       packer = gtk_vbox_new(TRUE, 40);
@@ -1382,7 +1383,7 @@ vtklock_create_event_icons(vtklock_t *vtklock, GtkWidget *parent, gboolean lands
 }
 
 static void
-visual_tklock_set_hildon_flags(GtkWidget *window, gboolean landscape)
+visual_tklock_set_hildon_flags(GtkWidget *window, gboolean portrait)
 {
   g_assert(window);
   /* FIXME */
@@ -1391,7 +1392,7 @@ visual_tklock_set_hildon_flags(GtkWidget *window, gboolean landscape)
   gtk_window_set_skip_taskbar_hint(GTK_WINDOW(window), TRUE);
   hildon_gtk_window_set_do_not_disturb(GTK_WINDOW(window), TRUE);
 
-  if(landscape)
+  //if(landscape)
   {
     gdk_atom_intern_static_string("_HILDON_PORTRAIT_MODE_SUPPORT");
     gdk_atom_intern_static_string("_HILDON_PORTRAIT_MODE_REQUEST");
@@ -1399,17 +1400,17 @@ visual_tklock_set_hildon_flags(GtkWidget *window, gboolean landscape)
 }
 
 static GtkWidget *
-visual_tklock_create_slider(gboolean landscape)
+visual_tklock_create_slider(gboolean portrait)
 {
   GtkWidget *slider;
 
-  slider  = landscape?hildon_gtk_hscale_new():hildon_gtk_vscale_new();
+  slider  = portrait?hildon_gtk_vscale_new():hildon_gtk_hscale_new();
   g_object_set(slider, "jump-to-position", FALSE, NULL);
 
-  gtk_widget_set_name(slider, landscape?"sui-tklock-slider":"sui-tklock-slider-portrait");
+  gtk_widget_set_name(slider, portrait?"sui-tklock-slider-portrait":"sui-tklock-slider");
 
 
-  if(!landscape)
+  if(portrait)
     gtk_widget_set_size_request(slider, -1, 440);
   else
     gtk_widget_set_size_request(slider, 440, -1);
@@ -1424,7 +1425,7 @@ visual_tklock_create_slider(gboolean landscape)
 static void
 visual_tklock_create_view_whimsy(vtklock_t *vtklock)
 {
-  gboolean landscape;
+  gboolean portrait;
   GdkPixbuf *pixbuf;
   GdkPixmap *bg_pixmap = NULL;
   GtkWidget *slider_align;
@@ -1436,14 +1437,14 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
   GtkWidget *timestamp_packer_align;
   GtkWidget *icon_packer;
   GtkWidget *icon_packer_align;
-  GtkRequisition slider_requisition;
+  GtkRequisition sr;
 
   if(vtklock->window)
     return;
 
   get_missed_events_from_db(vtklock);
 
-  landscape = gdk_screen_height() < gdk_screen_width()?TRUE:FALSE;
+  portrait = gdk_screen_height() > gdk_screen_width()?TRUE:FALSE;
 
   vtklock->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   gtk_window_set_title(GTK_WINDOW(vtklock->window), "visual_tklock");
@@ -1455,7 +1456,7 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
   if(pixbuf)
   {
     GtkStyle *gs;
-    if(!landscape)
+    if(portrait)
     {
       GdkPixbuf *pixbuf_rotated;
       pixbuf_rotated = gdk_pixbuf_rotate_simple(pixbuf, GDK_PIXBUF_ROTATE_CLOCKWISE);
@@ -1488,9 +1489,9 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
     gtk_widget_modify_bg(vtklock->window, GTK_STATE_NORMAL, &color);
   }
 
-  vtklock->slider = visual_tklock_create_slider(landscape);
+  vtklock->slider = visual_tklock_create_slider(portrait);
 
-  vtklock->slider_reset = TRUE;
+  vtklock->slider_status = 1;
 
   slider_align = gtk_alignment_new(0.5,0.5,0,0);
   gtk_container_add(GTK_CONTAINER(slider_align), vtklock->slider);
@@ -1504,15 +1505,15 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
   label = gtk_label_new(dgettext("osso-system-lock", "secu_swipe_to_unlock"));
   hildon_helper_set_logical_font(label, "SystemFont");
 
-  if(!landscape)
-    gtk_label_set_angle(GTK_LABEL(label), 270.0);
+  if(portrait)
+    gtk_label_set_angle(GTK_LABEL(label), 90.0);
 
-  timestamp_packer = vtklock_create_date_time_widget(&vtklock->ts, landscape);
+  timestamp_packer = vtklock_create_date_time_widget(&vtklock->ts, portrait);
   g_assert(timestamp_packer != NULL);
 
   vtklock_update_date_time(&vtklock->ts);
 
-  if(!landscape)
+  if(portrait)
     timestamp_packer_align = gtk_alignment_new(0.0, 0.5, 0, 0);
   else
     timestamp_packer_align = gtk_alignment_new(0.5, 1.0, 0, 0);
@@ -1521,16 +1522,16 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
 
   if(event_count)
   {
-    if(!landscape)
+    if(portrait)
       icon_packer = gtk_hbox_new(TRUE, 40);
     else
       icon_packer = gtk_vbox_new(TRUE, 40);
 
     g_assert(icon_packer != NULL);
 
-    vtklock_create_event_icons(vtklock, icon_packer, landscape);
+    vtklock_create_event_icons(vtklock, icon_packer, portrait);
 
-    if(landscape)
+    if(portrait)
       icon_packer_align = gtk_alignment_new(0, 0.5, 0, 0);
     else
       icon_packer_align = gtk_alignment_new(0.5, 0, 0, 0);
@@ -1538,7 +1539,7 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
     gtk_container_add(GTK_CONTAINER(icon_packer_align), icon_packer);
   }
 
-  if(!landscape)
+  if(portrait)
   {
     label_align = gtk_alignment_new(1.0, 0.5, 0, 0);
     gtk_container_add(GTK_CONTAINER(label_align), label);
@@ -1553,26 +1554,31 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
 
   if(event_count)
   {
-    if(!landscape)
-      gtk_box_pack_start(GTK_BOX(label_packer), icon_packer_align, FALSE, FALSE, FALSE);
+    if(portrait)
+      gtk_box_pack_end(GTK_BOX(label_packer), icon_packer_align, FALSE, FALSE, 0);
     else
-      gtk_box_pack_end(GTK_BOX(label_packer), icon_packer_align, FALSE, FALSE, FALSE);
+      gtk_box_pack_start(GTK_BOX(label_packer), icon_packer_align, FALSE, FALSE, 0);
   }
 
-  if(!landscape)
+  if(portrait)
   {
-    gtk_box_pack_start(GTK_BOX(label_packer), timestamp_packer_align, FALSE, FALSE, FALSE);
-    gtk_box_pack_start(GTK_BOX(label_packer), slider_align, FALSE, FALSE, FALSE);
-    gtk_box_pack_start(GTK_BOX(label_packer), label_align, FALSE, FALSE, FALSE);
-    window_align = gtk_alignment_new(0.5, 0, 0, 0);
+    /*FIXME add portrait code */
+    gtk_box_pack_end(GTK_BOX(label_packer), label_align, FALSE, FALSE, 0);
+    gtk_box_pack_end(GTK_BOX(label_packer), slider_align, FALSE, FALSE, 0);
+    gtk_box_pack_end(GTK_BOX(label_packer), timestamp_packer_align, FALSE, FALSE, 0);
+    window_align = gtk_alignment_new(0.5, 0.5, 0, 0);
     gtk_alignment_set_padding(GTK_ALIGNMENT(window_align), 8, 24, 1, 0);
   }
   else
   {
-    gtk_box_pack_end(GTK_BOX(label_packer), label_align, FALSE, FALSE, FALSE);
-    gtk_box_pack_end(GTK_BOX(label_packer), slider_align, FALSE, FALSE, FALSE);
-    gtk_box_pack_end(GTK_BOX(label_packer), timestamp_packer_align, FALSE, FALSE, FALSE);
-    window_align = gtk_alignment_new(0.5, 0, 0, 0);
+    gtk_box_pack_start(GTK_BOX(label_packer), timestamp_packer_align, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(label_packer), slider_align, FALSE, FALSE, 0);
+
+    if(event_count)
+      gtk_box_pack_end(GTK_BOX(label_packer), icon_packer_align, FALSE, FALSE, 0);
+
+    gtk_box_pack_end(GTK_BOX(label_packer), label_align, FALSE, FALSE, 0);
+    window_align = gtk_alignment_new(0.5, 0.5, 0, 0);
     gtk_alignment_set_padding(GTK_ALIGNMENT(window_align), 0, 0, 0, 16);
   }
 
@@ -1588,32 +1594,45 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
 
   gtk_widget_show_all(window_align);
 
-  gtk_widget_size_request(vtklock->slider, &slider_requisition);
+  gtk_widget_size_request(vtklock->slider, &sr);
 
   if(event_count)
   {
-    /*FIXME TODO*/
-  }
-  else
-  {
-/*    GtkRequisition r;
-
-    gtk_widget_size_request(label, &r);
-    if(landscape == 0)
+    GtkRequisition r;
+    gtk_widget_size_request(icon_packer_align, &r);
+    if(portrait)
     {
-      480-slider_requisition.height
-          gtk_alignment_set_padding(GTK_ALIGNMENT(label_align),
-
+      /* TODO */
     }
     else
     {
+      gtk_alignment_set_padding(GTK_ALIGNMENT(slider_align),
+                                (abs(480-sr.height)/2)-96, 0, 0, 0);
+      gtk_alignment_set_padding(GTK_ALIGNMENT(icon_packer_align),
+                                30, 0, 0, 0);
+      /* FIXME WTF?*/
+      gtk_alignment_set_padding(GTK_ALIGNMENT(window_align),
+                                0,
+                                (sr.height<0?sr.height+3:sr.height)/4-16,
+                                0,0);
+    }
+  }
+  else
+  {
+    GtkRequisition r;
+    gtk_widget_size_request(label, &r);
 
-    }*/
+    if(portrait)
+      gtk_alignment_set_padding(GTK_ALIGNMENT(label_align),
+                                0, 0, (abs(480-sr.width)/2-48)-r.width, 0);
+    else
+      gtk_alignment_set_padding(GTK_ALIGNMENT(label_align),
+                                0, (abs(480-sr.height)/2-48)-r.height, 0, 0);
   }
 
   gtk_widget_realize(vtklock->window);
 
-  visual_tklock_set_hildon_flags(vtklock->window, landscape);
+  visual_tklock_set_hildon_flags(vtklock->window, portrait);
   gtk_widget_show_all(vtklock->window);
   vtklock_add_clockd_dbus_filter(vtklock);
 }
@@ -1691,18 +1710,61 @@ slider_change_value_cb(GtkRange     *range,
                        gdouble       value,
                        gpointer      user_data)
 {
-  return TRUE;
+  vtklock_t *vtklock = (vtklock_t *)user_data;
+  g_assert(vtklock != NULL);
+
+
+  if((value-3.0) > 0.5)
+  {
+    if(
+       (value - vtklock->slider_adjustment->upper < 0.899999976) &&
+       (value - vtklock->slider_adjustment->upper > -0.899999976)
+      )
+    {
+      vtklock->slider_adjustment->lower = 4;
+
+      if(vtklock->unlock_handler)
+        vtklock->unlock_handler();
+    }
+    if(scroll != GTK_SCROLL_STEP_BACKWARD)
+      return FALSE;
+  }
+  return FALSE;
 }
 
 static void
 slider_value_changed_cb(GtkRange *range,
                         gpointer  user_data)
 {
+  vtklock_t *vtklock = (vtklock_t *)user_data;
 
+  g_assert(vtklock != NULL);
+
+  if(vtklock->slider_status != 4)
+  {
+    gdouble value;
+
+    value = gtk_range_get_value(range);
+
+    if(
+       (vtklock->slider_adjustment->upper-value < 5) &&
+       (vtklock->slider_adjustment->upper-value >-5)
+       )
+    {
+      gtk_range_set_value(GTK_RANGE(vtklock->slider), vtklock->slider_adjustment->upper);
+      vtklock->slider_value = vtklock->slider_adjustment->upper;
+      if(vtklock->unlock_handler)
+        vtklock->unlock_handler();
+    }
+    else
+      vtklock_reset_slider_position(vtklock);
+  }
 }
 
 static gboolean
 vtklock_key_cb(GtkWidget *widget, GdkEvent *event, gpointer user_data)
 {
+  vtklock_t *vtklock = (vtklock_t *)user_data;
+  g_assert(vtklock != NULL && vtklock->window != NULL && GTK_WIDGET_MAPPED(vtklock->window));
   return TRUE;
 }
