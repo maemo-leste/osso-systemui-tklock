@@ -94,7 +94,7 @@ typedef struct {
 
 typedef struct{
   system_ui_data *data;
-  guint second_press_tag;
+  guint tklock_timeout_tag;
   Window hamm_window;
   gboolean display_off;
   guint cb_argc;
@@ -140,7 +140,9 @@ tklock_create_hamm_window();
 static void
 gp_tklock_destroy_lock(tklock *gp_tklock);
 static gboolean
-tklock_second_press_cb(gpointer user_data);
+tklock_timeout_cb(gpointer user_data);
+static void
+remove_tklock_timeout();
 
 static void
 tklock_unlock_display(DBusConnection *conn)
@@ -653,14 +655,9 @@ tklock_open_handler(const char *interface,
       gp_tklock_enable_lock(plugin_data->gp_tklock);
       plugin_data->cb_argc = 1;
 
-      if(plugin_data->second_press_tag)
-      {
-        g_source_remove(plugin_data->second_press_tag);
-        plugin_data->second_press_tag = 0;
+      remove_tklock_timeout();
 
-      }
-
-      plugin_data->second_press_tag = g_timeout_add_seconds(2, tklock_second_press_cb, NULL);
+      plugin_data->tklock_timeout_tag = g_timeout_add_seconds(2, tklock_timeout_cb, NULL);
       break;
     }
   default:
@@ -698,11 +695,7 @@ tklock_close_handler(const char *interface,
     mode = 1;
 
   tklock_destroy_hamm_window();
-  if(plugin_data->second_press_tag)
-  {
-    g_source_remove(plugin_data->second_press_tag);
-    plugin_data->second_press_tag = 0;
-  }
+  remove_tklock_timeout();
 
   if(!plugin_data->data)
   {
@@ -836,7 +829,7 @@ tklock_setup_plugin(system_ui_data *data)
   plugin_data->data = data;
 
   plugin_data->field_1C = 0;
-  plugin_data->second_press_tag = 0;
+  plugin_data->tklock_timeout_tag = 0;
   plugin_data->gp_tklock = NULL;
   plugin_data->vtklock = NULL;
 
@@ -993,10 +986,11 @@ tklock_dbus_filter(DBusConnection *connection, DBusMessage *message, void *user_
                                DBUS_TYPE_STRING, &value,
                                DBUS_TYPE_INVALID))
       {
-      SYSLOG_DEBUG("%s",value);
+        SYSLOG_DEBUG("%s",value);
         if(strcmp(value, MCE_DISPLAY_OFF_STRING) == 0)
         {
           plugin_data->display_off = TRUE;
+          remove_tklock_timeout();
         }
         else
         {
@@ -1752,11 +1746,11 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
 }
 
 static gboolean
-tklock_second_press_cb(gpointer user_data)
+tklock_timeout_cb(gpointer user_data)
 {
   DEBUG_FN;
 
-  plugin_data->second_press_tag = 0;
+  plugin_data->tklock_timeout_tag = 0;
 
   if(!plugin_data->display_off)
   {
@@ -1897,4 +1891,14 @@ vtklock_key_cb(GtkWidget *widget, GdkEvent *event, gpointer user_data)
 
   g_assert(vtklock != NULL && vtklock->window != NULL && GTK_WIDGET_MAPPED(vtklock->window));
   return TRUE;
+}
+
+static void
+remove_tklock_timeout()
+{
+  if(plugin_data->tklock_timeout_tag)
+  {
+    g_source_remove(plugin_data->tklock_timeout_tag);
+    plugin_data->tklock_timeout_tag = 0;
+  }
 }
