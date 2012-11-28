@@ -1476,22 +1476,37 @@ vtklock_create_event_icons(vtklock_t *vtklock, GtkWidget *parent, gboolean portr
 }
 
 static void
+set_gdk_property(GtkWidget *widget, GdkAtom property, gboolean value)
+{
+  if(GTK_WIDGET_REALIZED(widget))
+  {
+    gdk_property_change(widget->window,
+                        property,
+                        gdk_x11_xatom_to_atom(XA_CARDINAL),
+                        32,
+                        GDK_PROP_MODE_REPLACE,
+                        (const guchar*)&value,
+                        1
+                        );
+  }
+}
+static void
 visual_tklock_set_hildon_flags(GtkWidget *window, gboolean portrait)
 {
   DEBUG_FN;
 
   g_assert(window);
   /* FIXME */
-  gdk_atom_intern_static_string("_HILDON_WM_ACTION_NO_TRANSITIONS");
+  set_gdk_property(window, gdk_atom_intern_static_string("_HILDON_WM_ACTION_NO_TRANSITIONS"), TRUE);
   gtk_window_fullscreen(GTK_WINDOW(window));
   gtk_window_set_skip_taskbar_hint(GTK_WINDOW(window), TRUE);
   hildon_gtk_window_set_do_not_disturb(GTK_WINDOW(window), TRUE);
 
-  //if(landscape)
+  /*if(landscape)
   {
-    gdk_atom_intern_static_string("_HILDON_PORTRAIT_MODE_SUPPORT");
-    gdk_atom_intern_static_string("_HILDON_PORTRAIT_MODE_REQUEST");
-  }
+    set_gdk_property(window, gdk_atom_intern_static_string("_HILDON_PORTRAIT_MODE_SUPPORT"), TRUE);
+    set_gdk_property(window, gdk_atom_intern_static_string("_HILDON_PORTRAIT_MODE_REQUEST"), TRUE);
+  }*/
 }
 
 static GtkWidget *
