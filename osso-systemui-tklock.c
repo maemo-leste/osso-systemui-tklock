@@ -24,6 +24,19 @@
 #include "systemui.h"
 #include "osso-systemui-tklock.h"
 
+#ifdef DEBUG
+
+#define SYSLOG_DEBUG(msg, ...) \
+  syslog(LOG_MAKEPRI(LOG_USER, LOG_DEBUG), "%s:%d:" msg "\n", __func__, __LINE__, ##__VA_ARGS__)
+#define DEBUG_FN SYSLOG_DEBUG("")
+
+#else
+  #define SYSLOG_DEBUG(msg, ...)
+
+#endif
+
+#define DEBUG_FN SYSLOG_DEBUG("")
+
 #define SYSLOG_ERROR(msg, ...) \
   syslog(LOG_MAKEPRI(LOG_USER, LOG_ERR), "%s:%d:" msg "\n", __func__, __LINE__, ##__VA_ARGS__)
 
@@ -135,6 +148,7 @@ tklock_unlock_display(DBusConnection *conn)
   DBusMessage *message;
   const char * unlock = MCE_TK_UNLOCKED;
 
+  DEBUG_FN;
   message = dbus_message_new_method_call(
           MCE_SERVICE,
           MCE_REQUEST_PATH,
@@ -175,7 +189,7 @@ tklock_grab_timeout_cb(gpointer user_data)
   tklock *gp_tklock;
 
   gp_tklock = (tklock *)user_data;
-
+  DEBUG_FN;
   g_assert(gp_tklock != NULL);
 
   gdk_pointer_ungrab(0);
@@ -219,6 +233,8 @@ tklock_grab_timeout_cb(gpointer user_data)
 static void
 tklock_ungrab(tklock *gp_tklock)
 {
+  DEBUG_FN;
+
   g_assert(gp_tklock != NULL);
 
   if(gp_tklock->grab_timeout_tag)
@@ -235,6 +251,8 @@ tklock_ungrab(tklock *gp_tklock)
 static void
 gp_tklock_enable_lock(tklock *gp_tklock)
 {
+  DEBUG_FN;
+
   g_assert(gp_tklock != NULL);
 
   if(gp_tklock->window_hidden)
@@ -248,6 +266,8 @@ gp_tklock_enable_lock(tklock *gp_tklock)
 static void
 gp_tklock_disable_lock(tklock *gp_tklock)
 {
+  DEBUG_FN;
+
   g_assert(gp_tklock != NULL);
 
   if(gp_tklock->field_10)
@@ -291,6 +311,8 @@ tklock_map_cb (GtkWidget *widget, GdkEvent *event, gpointer user_data)
 {
   tklock *gp_tklock;
 
+  DEBUG_FN;
+
   gp_tklock = (tklock *)user_data;
 
   g_assert(gp_tklock != NULL);
@@ -324,6 +346,8 @@ tklock_map_cb (GtkWidget *widget, GdkEvent *event, gpointer user_data)
 
 gboolean tklock_one_input_mode_finished_handler(tklock *gp_tklock)
 {
+  DEBUG_FN;
+
   g_assert(gp_tklock != NULL);
   g_assert(gp_tklock->window != NULL);
 
@@ -350,6 +374,8 @@ tklock_key_press_cb(GtkWidget *widget, GdkEvent *event, gpointer user_data)
 {
   tklock *gp_tklock;
   DBusMessage *message;
+
+  DEBUG_FN;
 
   gp_tklock = (tklock *)user_data;
 
@@ -405,6 +431,8 @@ tklock_button_cb(GtkWidget *widget, GdkEvent *event, gpointer user_data)
 {
   tklock *gp_tklock;
 
+  DEBUG_FN;
+
   gp_tklock = (tklock *)user_data;
 
   g_assert(gp_tklock != NULL);
@@ -437,6 +465,8 @@ gp_tklock_create_window(tklock *gp_tklock)
     .max_width = 15,
     .max_height = 15
   };
+
+  DEBUG_FN;
 
   g_assert(gp_tklock != NULL);
 
@@ -486,6 +516,8 @@ gp_tklock_init(DBusConnection *systemui_conn)
 {
   tklock *gp_tklock;
 
+  DEBUG_FN;
+
   gp_tklock = g_slice_alloc0(sizeof(tklock));
 
   if(!gp_tklock)
@@ -512,12 +544,16 @@ static void gp_tklock_set_one_input_mode_handler(tklock *gp_tklock, void (*handl
 {
   g_assert( gp_tklock != NULL);
 
+  DEBUG_FN;
+
   gp_tklock->one_input_mode_finished_handler = handler;
 }
 
 static void
 one_input_mode_handler()
 {
+  DEBUG_FN;
+
   systemui_do_callback(plugin_data->data, &system_ui_callback, 1);
   systemui_do_callback(plugin_data->data, &system_ui_callback, 4);
   systemui_free_callback(&system_ui_callback);
@@ -534,96 +570,103 @@ tklock_open_handler(const char *interface,
   system_ui_handler_arg* hargs = ((system_ui_handler_arg*)args->data);
   int rv;
 
+  DEBUG_FN;
+
   if( !check_plugin_arguments(args, supported_args, 1) &&
       !check_plugin_arguments(args, supported_args, 2) &&
       !check_plugin_arguments(args, supported_args, 3) )
   {
-
     return 0;
   }
 
-  if(hargs[4].data.u32 == 4)
+  SYSLOG_DEBUG("hargs[4].data.u32[%u]", hargs[4].data.u32);
+
+  switch(hargs[4].data.u32)
   {
-    if(plugin_data->gp_tklock == NULL)
-      plugin_data->gp_tklock = gp_tklock_init(data->session_bus);
-
-    if(plugin_data->gp_tklock->window == NULL)
-      gp_tklock_create_window(plugin_data->gp_tklock);
-
-    if(!plugin_data->gp_tklock->one_input_mode_finished_handler)
-      gp_tklock_set_one_input_mode_handler(plugin_data->gp_tklock,one_input_mode_handler);
-
-  }
-  else if(hargs[4].data.u32 == 5)
-  {
-    tklock_destroy_hamm_window();
-    if(!plugin_data->vtklock)
+    case 4:
     {
-      plugin_data->vtklock = visual_tklock_new(plugin_data->gp_tklock);
-      visual_tklock_set_unlock_handler(plugin_data->vtklock, vtklock_unlock_handler);
+      if(plugin_data->gp_tklock == NULL)
+        plugin_data->gp_tklock = gp_tklock_init(data->session_bus);
+
+      if(plugin_data->gp_tklock->window == NULL)
+        gp_tklock_create_window(plugin_data->gp_tklock);
+
+      if(!plugin_data->gp_tklock->one_input_mode_finished_handler)
+        gp_tklock_set_one_input_mode_handler(plugin_data->gp_tklock,one_input_mode_handler);
+
+      plugin_data->cb_argc = 4;
+      plugin_data->gp_tklock->mode = TKLOCK_MODE_ENABLE;
+      plugin_data->gp_tklock->button_event = 0;
+      gp_tklock_enable_lock(plugin_data->gp_tklock);
+      break;
     }
 
-    if(!plugin_data->vtklock->window)
-      visual_tklock_create_view_whimsy(plugin_data->vtklock);
-
-    visual_tklock_present_view(plugin_data->vtklock);
-
-    if(plugin_data->cb_argc == 1)
+    case 5:
     {
-      if(plugin_data->gp_tklock->grab_timeout_tag)
+      tklock_destroy_hamm_window();
+
+      if(!plugin_data->vtklock)
       {
-        g_source_remove(plugin_data->gp_tklock->grab_timeout_tag);
-        plugin_data->gp_tklock->grab_timeout_tag = 0;
+        plugin_data->vtklock = visual_tklock_new(plugin_data->gp_tklock);
+        visual_tklock_set_unlock_handler(plugin_data->vtklock, vtklock_unlock_handler);
       }
-      gp_tklock_disable_lock(plugin_data->gp_tklock);
+
+      if(!plugin_data->vtklock->window)
+        visual_tklock_create_view_whimsy(plugin_data->vtklock);
+
+      visual_tklock_present_view(plugin_data->vtklock);
+
+      if(plugin_data->cb_argc == 1)
+      {
+        if(plugin_data->gp_tklock->grab_timeout_tag)
+        {
+          g_source_remove(plugin_data->gp_tklock->grab_timeout_tag);
+          plugin_data->gp_tklock->grab_timeout_tag = 0;
+        }
+        gp_tklock_disable_lock(plugin_data->gp_tklock);
+      }
+
+      plugin_data->cb_argc = 5;
+      break;
     }
-  }
-  else if(hargs[4].data.u32 == 1)
-  {
-    if(plugin_data->cb_argc == 4)
+  case 1:
     {
-      do_callback(plugin_data->data, &system_ui_callback, plugin_data->cb_argc);
+      if(plugin_data->cb_argc == 4)
+      {
+        do_callback(plugin_data->data, &system_ui_callback, plugin_data->cb_argc);
+      }
+      else if(plugin_data->cb_argc == 5)
+      {
+        if(plugin_data->vtklock && plugin_data->vtklock->window)
+          visual_tklock_destroy_lock(plugin_data->vtklock);
+      }
+
+      if(!plugin_data->hamm_window)
+        tklock_create_hamm_window();
+
+      if(!plugin_data->gp_tklock)
+        plugin_data->gp_tklock = gp_tklock_init(data->session_bus);
+      else if(!plugin_data->gp_tklock->window)
+        gp_tklock_create_window(plugin_data->gp_tklock);
+
+      plugin_data->gp_tklock->mode = TKLOCK_MODE_NONE;
+      gp_tklock_enable_lock(plugin_data->gp_tklock);
+      plugin_data->cb_argc = 1;
+
+      if(plugin_data->second_press_tag)
+      {
+        g_source_remove(plugin_data->second_press_tag);
+        plugin_data->second_press_tag = 0;
+
+      }
+
+      plugin_data->second_press_tag = g_timeout_add_seconds(2, tklock_second_press_cb, NULL);
+      break;
     }
-    else if(plugin_data->cb_argc != 5)
-    {
-      if(plugin_data->vtklock && plugin_data->vtklock->window)
-        visual_tklock_destroy_lock(plugin_data->vtklock);
-    }
-
-    if(!plugin_data->hamm_window)
-      tklock_create_hamm_window();
-
-    if(!plugin_data->gp_tklock)
-      plugin_data->gp_tklock = gp_tklock_init(data->session_bus);
-
-    if(!plugin_data->gp_tklock->window)
-      gp_tklock_create_window(plugin_data->gp_tklock);
-
-    plugin_data->gp_tklock->mode = TKLOCK_MODE_NONE;
-    gp_tklock_enable_lock(plugin_data->gp_tklock);
-    plugin_data->cb_argc = 1;
-
-    if(plugin_data->second_press_tag)
-    {
-      g_source_remove(plugin_data->second_press_tag);
-      plugin_data->second_press_tag = 0;
-
-    }
-
-    plugin_data->second_press_tag = g_timeout_add_seconds(2, tklock_second_press_cb, NULL);
-
-    goto quit;
-  }
-  else
+  default:
     return 0;
+  }
 
-  plugin_data->gp_tklock->mode = TKLOCK_MODE_ENABLE;
-  plugin_data->gp_tklock->button_event = 0;
-  gp_tklock_enable_lock(plugin_data->gp_tklock);
-
-  plugin_data->cb_argc = 4;
-
-quit:
   out->arg_type = 'i';
 
   rv = check_set_callback(args, &system_ui_callback);
@@ -644,9 +687,15 @@ tklock_close_handler(const char *interface,
                      system_ui_handler_arg *out)
 {
   int supported_args[3] = {'b'};
-  int rv;
+  int mode;
+  system_ui_handler_arg* hargs = ((system_ui_handler_arg*)args->data);
 
-  rv = check_plugin_arguments(args, supported_args, 1);
+  DEBUG_FN;
+
+  if(check_plugin_arguments(args, supported_args, 1))
+    mode = hargs[4].data.u32;
+  else
+    mode = 1;
 
   tklock_destroy_hamm_window();
   if(plugin_data->second_press_tag)
@@ -670,16 +719,16 @@ tklock_close_handler(const char *interface,
                                     plugin_data->gp_tklock->btn_press_handler_id);
     }
 
-    if(plugin_data->gp_tklock->button_event !=2 && rv)
+    if(plugin_data->gp_tklock->button_event !=2 && mode)
       goto out;
+
+    plugin_data->gp_tklock->mode = TKLOCK_MODE_NONE;
+    plugin_data->gp_tklock->button_event = 0;
 
     if(!plugin_data->gp_tklock->window_hidden)
       gp_tklock_destroy_lock(plugin_data->gp_tklock);
 
-    plugin_data->gp_tklock->mode = TKLOCK_MODE_NONE;
-    plugin_data->gp_tklock->button_event = 0;
   }
-
 
   if(plugin_data->vtklock)
     visual_tklock_destroy_lock(plugin_data->vtklock);
@@ -701,6 +750,8 @@ tklock_create_hamm_window()
   Atom atom_fullscreen;
 
   const guint layer = 10;
+
+  DEBUG_FN;
 
   dpy = gdk_x11_display_get_xdisplay(gdk_display_get_default());
   screen = gdk_screen_get_default();
@@ -760,6 +811,8 @@ tklock_create_hamm_window()
 static void
 tklock_destroy_hamm_window()
 {
+  DEBUG_FN;
+
   if(plugin_data && plugin_data->hamm_window)
   {
     XUnmapWindow(gdk_x11_display_get_xdisplay (gdk_display_get_default()), plugin_data->hamm_window);
@@ -772,6 +825,8 @@ tklock_destroy_hamm_window()
 static gboolean
 tklock_setup_plugin(system_ui_data *data)
 {
+  DEBUG_FN;
+
   plugin_data = g_slice_alloc0(sizeof(tklock_plugin_data));
   if(!plugin_data)
   {
@@ -792,6 +847,8 @@ gboolean
 plugin_init(system_ui_data *data)
 {
   openlog("systemui-tklock", LOG_ALERT | LOG_USER, LOG_NDELAY);
+
+  DEBUG_FN;
 
   if( !data )
   {
@@ -824,6 +881,8 @@ plugin_init(system_ui_data *data)
 static void
 gp_tklock_destroy_lock(tklock *gp_tklock)
 {
+  DEBUG_FN;
+
   if(gp_tklock->field_10)
   {
     g_source_remove(gp_tklock->field_10);
@@ -869,6 +928,8 @@ gp_tklock_destroy_lock(tklock *gp_tklock)
 static void
 gp_tklock_destroy(tklock *gp_tklock)
 {
+  DEBUG_FN;
+
   if(!gp_tklock)
     return;
 
@@ -922,14 +983,17 @@ tklock_dbus_filter(DBusConnection *connection, DBusMessage *message, void *user_
 {
   const char *value;
 
+  DEBUG_FN;
+
   if (dbus_message_is_signal (message,
-                                     MCE_SIGNAL_IF,
-                                     MCE_DISPLAY_SIG))
+                              MCE_SIGNAL_IF,
+                              MCE_DISPLAY_SIG))
   {
     if (dbus_message_get_args (message, NULL,
                                DBUS_TYPE_STRING, &value,
                                DBUS_TYPE_INVALID))
       {
+      SYSLOG_DEBUG("%s",value);
         if(strcmp(value, MCE_DISPLAY_OFF_STRING) == 0)
         {
           plugin_data->display_off = TRUE;
@@ -949,6 +1013,9 @@ static DBusHandlerResult
 vtklock_dbus_filter(DBusConnection *connection, DBusMessage *message, void *user_data)
 {
   vtklock_t *vtklock = (vtklock_t*)user_data;
+
+  DEBUG_FN;
+
   if(dbus_message_get_type(message) == DBUS_MESSAGE_TYPE_SIGNAL &&
      !g_strcmp0(dbus_message_get_member(message),"time_changed"))
   {
@@ -956,6 +1023,7 @@ vtklock_dbus_filter(DBusConnection *connection, DBusMessage *message, void *user
     time_get_synced();
     vtklock_update_date_time(&vtklock->ts);
   }
+
   return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 }
 
@@ -963,6 +1031,8 @@ vtklock_dbus_filter(DBusConnection *connection, DBusMessage *message, void *user
 static void
 vtklock_remove_clockd_dbus_filter(vtklock_t *vtklock)
 {
+  DEBUG_FN;
+
   g_assert(vtklock->systemui_conn != NULL);
 
   dbus_bus_remove_match(vtklock->systemui_conn,
@@ -976,6 +1046,8 @@ vtklock_remove_clockd_dbus_filter(vtklock_t *vtklock)
 static void
 vtklock_add_clockd_dbus_filter(vtklock_t *vtklock)
 {
+  DEBUG_FN;
+
   g_assert(vtklock->systemui_conn != NULL);
 
   dbus_bus_add_match(vtklock->systemui_conn,
@@ -990,6 +1062,8 @@ vtklock_add_clockd_dbus_filter(vtklock_t *vtklock)
 
 void plugin_close(system_ui_data *data)
 {
+  DEBUG_FN;
+
   if(plugin_data->data != data)
   {
     SYSLOG_ERROR("systemui context is inconsistent");
@@ -1023,6 +1097,8 @@ visual_tklock_new(tklock *gp_tklock)
 {
   vtklock_t *vtklock;
 
+  DEBUG_FN;
+
   vtklock = g_slice_alloc0(sizeof(vtklock_t));
 
   if(!vtklock)
@@ -1049,6 +1125,8 @@ vtklock_update_date_time(vtklockts *ts)
   const char *msgid;
   char time_buf[64];
   GConfClient *gc;
+
+  DEBUG_FN;
 
   g_assert(ts != NULL);
 
@@ -1088,6 +1166,8 @@ vtklock_update_date_time(vtklockts *ts)
 static void
 visual_tklock_destroy_lock(vtklock_t *vtklock)
 {
+  DEBUG_FN;
+
   if(!vtklock)
     return;
 
@@ -1113,6 +1193,8 @@ visual_tklock_destroy_lock(vtklock_t *vtklock)
 static void
 visual_tklock_destroy(vtklock_t *vtklock)
 {
+  DEBUG_FN;
+
   if(!vtklock)
     return;
 
@@ -1122,7 +1204,7 @@ visual_tklock_destroy(vtklock_t *vtklock)
 }
 
 static int
-convert_str_to_index(char *str)
+convert_str_to_index(const char *str)
 {
   if(!strcmp("chat-message", str))
     return 0;
@@ -1149,6 +1231,8 @@ get_missed_events_cb(void*user_data, int numcols, char**column_text, char**colum
 {
   vtklock_t *vtklock = (vtklock_t *)user_data;
   int index;
+
+  DEBUG_FN;
 
   g_assert(vtklock != NULL);
 
@@ -1179,13 +1263,14 @@ get_missed_events_cb(void*user_data, int numcols, char**column_text, char**colum
 static void
 get_missed_events_from_db(vtklock_t *vtklock)
 {
-  /* TODO */
   sqlite3 *pdb;
   char *sql;
   char *errmsg = NULL;
   int i;
   gchar * db_fname;
   struct stat sb;
+
+  DEBUG_FN;
 
   db_fname = g_build_filename(g_get_home_dir(), ".config/hildon-desktop/notifications.db", NULL);
 
@@ -1241,6 +1326,8 @@ out:
 
 gboolean vtklock_reset_slider_position(vtklock_t *vtklock)
 {
+  DEBUG_FN;
+
   g_assert(vtklock != NULL);
   g_assert(vtklock->slider != NULL && GTK_IS_RANGE(vtklock->slider));
 
@@ -1256,6 +1343,8 @@ vtklock_create_date_time_widget(vtklockts *ts, gboolean portrait)
   GtkWidget *box,*time_box,*date_box;
   GtkWidget *date_label, *time_label;
   PangoFontDescription *font_desc;
+
+  DEBUG_FN;
 
   g_assert(ts != NULL && ts->time_label == NULL && ts->date_label == NULL);
 
@@ -1313,6 +1402,7 @@ get_icon_name(guint index)
     "general_email",
     "tasklaunch_voice_mail",
   };
+
   return icon_names[index];
 }
 
@@ -1320,6 +1410,9 @@ static void
 vtklock_create_event_icons(vtklock_t *vtklock, GtkWidget *parent, gboolean portrait)
 {
   int i;
+
+  DEBUG_FN;
+
   for(i=0; i<6; i++)
   {
     PangoFontDescription *font_desc;
@@ -1385,6 +1478,8 @@ vtklock_create_event_icons(vtklock_t *vtklock, GtkWidget *parent, gboolean portr
 static void
 visual_tklock_set_hildon_flags(GtkWidget *window, gboolean portrait)
 {
+  DEBUG_FN;
+
   g_assert(window);
   /* FIXME */
   gdk_atom_intern_static_string("_HILDON_WM_ACTION_NO_TRANSITIONS");
@@ -1403,6 +1498,8 @@ static GtkWidget *
 visual_tklock_create_slider(gboolean portrait)
 {
   GtkWidget *slider;
+
+  DEBUG_FN;
 
   slider  = portrait?hildon_gtk_vscale_new():hildon_gtk_hscale_new();
   g_object_set(slider, "jump-to-position", FALSE, NULL);
@@ -1438,6 +1535,8 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
   GtkWidget *icon_packer;
   GtkWidget *icon_packer_align;
   GtkRequisition sr;
+
+  DEBUG_FN;
 
   if(vtklock->window)
     return;
@@ -1640,8 +1739,10 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
 static gboolean
 tklock_second_press_cb(gpointer user_data)
 {
+  DEBUG_FN;
 
   plugin_data->second_press_tag = 0;
+
   if(!plugin_data->display_off)
   {
     tklock_destroy_hamm_window();
@@ -1658,13 +1759,16 @@ tklock_second_press_cb(gpointer user_data)
     }
   }
 
-  return 0;
+  return FALSE;
 }
 
 static void
 visual_tklock_present_view(vtklock_t *vtklock)
 {
   GtkWidget *grab;
+
+  DEBUG_FN;
+
   g_assert(vtklock != NULL);
 
   vtklock_update_date_time(&vtklock->ts);
@@ -1694,12 +1798,16 @@ visual_tklock_present_view(vtklock_t *vtklock)
 static void
 vtklock_unlock_handler()
 {
+  DEBUG_FN;
+
   systemui_do_callback( plugin_data->data, &system_ui_callback, 1);
 }
 
 static void
 visual_tklock_set_unlock_handler(vtklock_t *vtklock, void(*unlock_handler)())
 {
+  DEBUG_FN;
+
   g_assert(vtklock != NULL);
   vtklock->unlock_handler = unlock_handler;
 }
@@ -1711,8 +1819,10 @@ slider_change_value_cb(GtkRange     *range,
                        gpointer      user_data)
 {
   vtklock_t *vtklock = (vtklock_t *)user_data;
-  g_assert(vtklock != NULL);
 
+  DEBUG_FN;
+
+  g_assert(vtklock != NULL);
 
   if((value-3.0) > 0.5)
   {
@@ -1737,6 +1847,8 @@ slider_value_changed_cb(GtkRange *range,
                         gpointer  user_data)
 {
   vtklock_t *vtklock = (vtklock_t *)user_data;
+
+  DEBUG_FN;
 
   g_assert(vtklock != NULL);
 
@@ -1765,6 +1877,9 @@ static gboolean
 vtklock_key_cb(GtkWidget *widget, GdkEvent *event, gpointer user_data)
 {
   vtklock_t *vtklock = (vtklock_t *)user_data;
+
+  DEBUG_FN;
+
   g_assert(vtklock != NULL && vtklock->window != NULL && GTK_WIDGET_MAPPED(vtklock->window));
   return TRUE;
 }
