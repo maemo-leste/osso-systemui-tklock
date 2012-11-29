@@ -1265,9 +1265,9 @@ get_missed_events_from_db(vtklock_t *vtklock)
   struct stat sb;
 
   DEBUG_FN;
-
   db_fname = g_build_filename(g_get_home_dir(), ".config/hildon-desktop/notifications.db", NULL);
 
+#if 0
   if(stat(db_fname, &sb))
   {
     SYSLOG_NOTICE("get_missed_events_from_db: error in reading db file info");
@@ -1275,7 +1275,7 @@ get_missed_events_from_db(vtklock_t *vtklock)
 
   if(g_notifications_mtime == sb.st_mtime)
     goto out;
-
+#endif
   event_count = 0;
 
   for(i = 0; i< 6; i++)
@@ -1400,12 +1400,25 @@ get_icon_name(guint index)
   return icon_names[index];
 }
 
-static void
-vtklock_create_event_icons(vtklock_t *vtklock, GtkWidget *parent, gboolean portrait)
+static GtkWidget *
+vtklock_create_event_icons(vtklock_t *vtklock, gboolean portrait)
 {
   int i;
+  GtkWidget *align;
+  GtkWidget *icon_packer;
 
   DEBUG_FN;
+
+  if(portrait)
+  {
+    align = gtk_alignment_new(0, 0.5, 0, 0);
+    icon_packer = gtk_vbox_new(TRUE, 40);
+  }
+  else
+  {
+    align = gtk_alignment_new(0.5, 0, 0, 0);
+    icon_packer = gtk_hbox_new(TRUE, 40);
+  }
 
   for(i=0; i<6; i++)
   {
@@ -1459,14 +1472,20 @@ vtklock_create_event_icons(vtklock_t *vtklock, GtkWidget *parent, gboolean portr
     g_object_unref(pixbuf);
 
     if(portrait)
-      packer = gtk_hbox_new(TRUE, 40);
+      packer = gtk_vbox_new(TRUE, 0);
     else
-      packer = gtk_vbox_new(TRUE, 40);
+      packer = gtk_hbox_new(TRUE, 0);
 
     gtk_box_pack_start(GTK_BOX(packer), image, TRUE, TRUE, FALSE);
     gtk_box_pack_end(GTK_BOX(packer), count_label, TRUE, TRUE, FALSE);
-    gtk_box_pack_start(GTK_BOX(parent), image, TRUE, TRUE, FALSE);
+
+    gtk_box_pack_start(GTK_BOX(icon_packer), packer, TRUE, TRUE, FALSE);
   }
+
+  gtk_container_add(GTK_CONTAINER(align), icon_packer);
+
+  return align;
+
 }
 
 static void
@@ -1541,7 +1560,6 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
   GtkWidget *label_packer;
   GtkWidget *timestamp_packer;
   GtkWidget *timestamp_packer_align;
-  GtkWidget *icon_packer;
   GtkWidget *icon_packer_align;
   GtkRequisition sr;
 
@@ -1630,21 +1648,7 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
 
   if(event_count)
   {
-    if(portrait)
-      icon_packer = gtk_hbox_new(TRUE, 40);
-    else
-      icon_packer = gtk_vbox_new(TRUE, 40);
-
-    g_assert(icon_packer != NULL);
-
-    vtklock_create_event_icons(vtklock, icon_packer, portrait);
-
-    if(portrait)
-      icon_packer_align = gtk_alignment_new(0, 0.5, 0, 0);
-    else
-      icon_packer_align = gtk_alignment_new(0.5, 0, 0, 0);
-
-    gtk_container_add(GTK_CONTAINER(icon_packer_align), icon_packer);
+    icon_packer_align = vtklock_create_event_icons(vtklock, portrait);
   }
 
   if(portrait)
@@ -1658,14 +1662,6 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
     label_align = gtk_alignment_new(0.5, 0.0, 0, 0);
     gtk_container_add(GTK_CONTAINER(label_align), label);
     label_packer = gtk_vbox_new(FALSE, 24);
-  }
-
-  if(event_count)
-  {
-    if(portrait)
-      gtk_box_pack_end(GTK_BOX(label_packer), icon_packer_align, FALSE, FALSE, 0);
-    else
-      gtk_box_pack_start(GTK_BOX(label_packer), icon_packer_align, FALSE, FALSE, 0);
   }
 
   if(portrait)
@@ -1707,22 +1703,24 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
   if(event_count)
   {
     GtkRequisition r;
-    gtk_widget_size_request(icon_packer_align, &r);
+    gtk_widget_size_request(label, &r);
+//    gtk_widget_size_request(icon_packer_align, &r);
     if(portrait)
     {
       /* TODO */
     }
     else
     {
-      gtk_alignment_set_padding(GTK_ALIGNMENT(slider_align),
-                                (abs(480-sr.height)/2)-96, 0, 0, 0);
+/*      gtk_alignment_set_padding(GTK_ALIGNMENT(slider_align),
+                                (sr.height - (((480-sr.height)/2))-96), 0, 0, 0);*/
+      gtk_alignment_set_padding(GTK_ALIGNMENT(label_align),
+                                0, (abs(480-sr.height)/2-48)-r.height, 0, 0);
       gtk_alignment_set_padding(GTK_ALIGNMENT(icon_packer_align),
-                                30, 0, 0, 0);
-      /* FIXME WTF?*/
-      gtk_alignment_set_padding(GTK_ALIGNMENT(window_align),
-                                0,
-                                (sr.height<0?sr.height+3:sr.height)/4-16,
-                                0,0);
+                                30, 0,
+                                0, 0);
+/*      gtk_alignment_set_padding(GTK_ALIGNMENT(window_align),
+                                0, (sr.height<0?sr.height+3:sr.height)/4-16,
+                                0,0);*/
     }
   }
   else
