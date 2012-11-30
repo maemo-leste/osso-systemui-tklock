@@ -774,7 +774,6 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
   GtkWidget *timestamp_packer;
   GtkWidget *timestamp_packer_align;
   GtkWidget *icon_packer_align;
-  GtkRequisition sr;
 
   DEBUG_FN;
 
@@ -879,28 +878,26 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
 
   gtk_widget_show_all(window_align);
 
-  gtk_widget_size_request(vtklock->slider, &sr);
-
   if(event_count)
   {
     GtkRequisition r;
-    gtk_widget_size_request(label, &r);
-//    gtk_widget_size_request(icon_packer_align, &r);
+    GtkRequisition sr;
+    GtkRequisition lr;
 
-/*      gtk_alignment_set_padding(GTK_ALIGNMENT(slider_align),
-                                (sr.height - (((480-sr.height)/2))-96), 0, 0, 0);*/
-      gtk_alignment_set_padding(GTK_ALIGNMENT(label_align),
-                                0, (abs(480-sr.height)/2-48)-r.height, 0, 0);
+    gtk_widget_size_request(vtklock->slider, &sr);
+    gtk_widget_size_request(icon_packer_align, &r);
+    gtk_widget_size_request(label_align, &lr);
+
       gtk_alignment_set_padding(GTK_ALIGNMENT(icon_packer_align),
-                                30, 0,
+                                30, 60-sr.height/2,
                                 0, 0);
-/*      gtk_alignment_set_padding(GTK_ALIGNMENT(window_align),
-                                0, (sr.height<0?sr.height+3:sr.height)/4-16,
-                                0,0);*/
   }
   else
   {
     GtkRequisition r;
+    GtkRequisition sr;
+
+    gtk_widget_size_request(vtklock->slider, &sr);
     gtk_widget_size_request(label, &r);
 
     gtk_alignment_set_padding(GTK_ALIGNMENT(label_align),
