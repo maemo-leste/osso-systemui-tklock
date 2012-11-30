@@ -67,15 +67,15 @@ typedef struct {
   vtklockts ts;
   GtkWidget *slider;
   guint slider_status;
-  int field_14;
   gdouble slider_value;
   GtkAdjustment *slider_adjustment;
   DBusConnection *systemui_conn;
   int priority;
   guint update_date_time_cb_tag;
   void(*unlock_handler)();
-  int field_34;
   event_t event[6];
+  gulong slider_value_changed_id;
+  gulong slider_change_value_id;
 }vtklock_t;
 
 typedef struct{
@@ -85,9 +85,7 @@ typedef struct{
 } tklock_plugin_data;
 
 tklock_plugin_data *plugin_data = NULL;
-system_ui_callback_t system_ui_callback;
-
-guint grab_tries_cnt = 0;
+system_ui_callback_t system_ui_callback = {0,};
 
 guint event_count = 0;
 guint g_notifications[6] = {0,};
@@ -95,6 +93,8 @@ time_t g_notifications_mtime;
 
 static void
 vtklock_update_date_time(vtklockts *ts);
+static void
+visual_tklock_destroy(vtklock_t *vtklock);
 static void
 visual_tklock_destroy_lock(vtklock_t *vtklock);
 static void
@@ -111,8 +111,6 @@ static gboolean
 slider_change_value_cb(GtkRange *range, GtkScrollType scroll, gdouble value, gpointer user_data);
 static void
 slider_value_changed_cb(GtkRange *range, gpointer user_data);
-static gboolean
-vtklock_key_cb(GtkWidget *widget, GdkEvent *event, gpointer user_data);
 
 static int
 tklock_open_handler(const char *interface,
@@ -138,8 +136,7 @@ tklock_open_handler(const char *interface,
 
   switch(hargs[4].data.u32)
   {
-
-  case 5:
+    case 5:
     {
       if(!plugin_data->vtklock)
       {
@@ -155,7 +152,7 @@ tklock_open_handler(const char *interface,
       plugin_data->cb_argc = 5;
       break;
     }
-  case 1:
+    case 1:
     {
       if(plugin_data->cb_argc == 5)
       {
@@ -202,6 +199,7 @@ tklock_close_handler(const char *interface,
     visual_tklock_destroy_lock(plugin_data->vtklock);
 
   systemui_free_callback(&system_ui_callback);
+
 out:
   return 'v';
 }
@@ -317,7 +315,7 @@ void plugin_close(system_ui_data *data)
     remove_handler("tklock_close", plugin_data->data);
   }
 
-  visual_tklock_destroy_lock(plugin_data->vtklock);
+  visual_tklock_destroy(plugin_data->vtklock);
 
   g_slice_free(tklock_plugin_data,plugin_data);
 
@@ -378,7 +376,6 @@ vtklock_update_date_time(vtklockts *ts)
 
   g_assert(gc);
 
-
   if ( gconf_client_get_bool(gc, "/apps/clock/time-format", 0) )
     msgid = "wdgt_va_24h_time";
   else
@@ -403,14 +400,15 @@ vtklock_update_date_time(vtklockts *ts)
   }
 }
 
-
 static void
 visual_tklock_destroy_lock(vtklock_t *vtklock)
 {
   DEBUG_FN;
 
-  if(!vtklock)
+  if(!vtklock || !vtklock->window)
     return;
+
+  gtk_grab_remove(vtklock->window);
 
   vtklock_remove_clockd_dbus_filter(vtklock);
 
@@ -419,6 +417,12 @@ visual_tklock_destroy_lock(vtklock_t *vtklock)
     g_source_remove(vtklock->update_date_time_cb_tag);
     vtklock->update_date_time_cb_tag = 0;
   }
+
+  if(g_signal_handler_is_connected(vtklock->slider,vtklock->slider_change_value_id))
+    g_signal_handler_disconnect(vtklock->slider,vtklock->slider_change_value_id);
+
+  if(g_signal_handler_is_connected(vtklock->slider,vtklock->slider_value_changed_id))
+    g_signal_handler_disconnect(vtklock->slider,vtklock->slider_value_changed_id);
 
   ipm_hide_window(vtklock->window);
   gtk_widget_unrealize(vtklock->window);
@@ -514,15 +518,14 @@ get_missed_events_from_db(vtklock_t *vtklock)
   DEBUG_FN;
   db_fname = g_build_filename(g_get_home_dir(), ".config/hildon-desktop/notifications.db", NULL);
 
-#if 0
   if(stat(db_fname, &sb))
   {
-    SYSLOG_NOTICE("get_missed_events_from_db: error in reading db file info");
+    SYSLOG_NOTICE("get_missed_events_from_db: error in reading db file info [%s]", db_fname);
   }
 
   if(g_notifications_mtime == sb.st_mtime)
     goto out;
-#endif
+
   event_count = 0;
 
   for(i = 0; i< 6; i++)
@@ -537,7 +540,7 @@ get_missed_events_from_db(vtklock_t *vtklock)
                   SQLITE_OPEN_READONLY,
                   NULL) != SQLITE_OK)
   {
-    SYSLOG_WARNING("get_missed_events_from_db: error in opening db...");
+    SYSLOG_WARNING("get_missed_events_from_db: error in opening db [%s]", db_fname);
     goto db_close_out;
   }
 
@@ -561,6 +564,7 @@ get_missed_events_from_db(vtklock_t *vtklock)
 
 db_close_out:
   sqlite3_close(pdb);
+
 out:
   g_free(db_fname);
 }
@@ -578,6 +582,7 @@ gboolean vtklock_reset_slider_position(vtklock_t *vtklock)
 
   return TRUE;
 }
+
 static GtkWidget *
 vtklock_create_date_time_widget(vtklockts *ts, gboolean portrait)
 {
@@ -820,6 +825,7 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
   portrait = gdk_screen_height() > gdk_screen_width()?TRUE:FALSE;
 
   vtklock->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+
   gtk_window_set_title(GTK_WINDOW(vtklock->window), "visual_tklock");
   gtk_window_set_decorated(GTK_WINDOW(vtklock->window), FALSE);
   gtk_window_set_keep_above(GTK_WINDOW(vtklock->window), TRUE);
@@ -894,9 +900,7 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
   gtk_container_add(GTK_CONTAINER(timestamp_packer_align), timestamp_packer);
 
   if(event_count)
-  {
     icon_packer_align = vtklock_create_event_icons(vtklock, portrait);
-  }
 
   if(portrait)
   {
@@ -937,11 +941,16 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
 
   gtk_container_add(GTK_CONTAINER(vtklock->window), window_align);
 
-  g_signal_connect_data(vtklock->slider, "change-value", G_CALLBACK(slider_change_value_cb), vtklock, NULL, 0);
-  g_signal_connect_data(vtklock->slider, "value-changed", G_CALLBACK(slider_value_changed_cb), vtklock, NULL, 0);
-
-  g_signal_connect_data(vtklock->window, "key-press-event", G_CALLBACK(vtklock_key_cb), vtklock, NULL, 0);
-  g_signal_connect_data(vtklock->window, "key-release-event", G_CALLBACK(vtklock_key_cb), vtklock, NULL, 0);
+  vtklock->slider_change_value_id = g_signal_connect_data(vtklock->slider,
+                                                          "change-value",
+                                                          G_CALLBACK(slider_change_value_cb),
+                                                          vtklock,
+                                                          NULL, 0);
+  vtklock->slider_value_changed_id = g_signal_connect_data(vtklock->slider,
+                                                           "value-changed",
+                                                           G_CALLBACK(slider_value_changed_cb),
+                                                           vtklock,
+                                                           NULL, 0);
 
   gtk_widget_show_all(window_align);
 
@@ -993,19 +1002,15 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
 static void
 visual_tklock_present_view(vtklock_t *vtklock)
 {
-  GtkWidget *grab;
-
   DEBUG_FN;
 
   g_assert(vtklock != NULL);
 
   vtklock_update_date_time(&vtklock->ts);
 
-  grab =  gtk_grab_get_current();
-  if(!grab)
+  if(!gtk_grab_get_current())
   {
-    grab = vtklock->window;
-    gtk_grab_add(grab);
+    gtk_grab_add(vtklock->window);
   }
 
   gtk_widget_realize(vtklock->window);
@@ -1100,15 +1105,3 @@ slider_value_changed_cb(GtkRange *range,
       vtklock_reset_slider_position(vtklock);
   }
 }
-
-static gboolean
-vtklock_key_cb(GtkWidget *widget, GdkEvent *event, gpointer user_data)
-{
-  vtklock_t *vtklock = (vtklock_t *)user_data;
-
-  DEBUG_FN;
-
-  g_assert(vtklock != NULL && vtklock->window != NULL && GTK_WIDGET_MAPPED(vtklock->window));
-  return TRUE;
-}
-
