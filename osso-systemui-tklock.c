@@ -20,8 +20,8 @@
 #include <hildon/hildon.h>
 #include <hildon/hildon-gtk.h>
 #include <sqlite3.h>
+#include <systemui.h>
 
-#include "systemui.h"
 #include "osso-systemui-tklock.h"
 
 #ifdef DEBUG
