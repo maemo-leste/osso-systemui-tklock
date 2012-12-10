@@ -20,8 +20,8 @@
 #include <hildon/hildon.h>
 #include <hildon/hildon-gtk.h>
 #include <sqlite3.h>
-#include <systemui.h>
 
+#include <systemui.h>
 #include "osso-systemui-tklock.h"
 
 #ifdef DEBUG
@@ -100,7 +100,7 @@ visual_tklock_destroy_lock(vtklock_t *vtklock);
 static void
 visual_tklock_create_view_whimsy(vtklock_t *vtklock);
 static vtklock_t*
-visual_tklock_new(DBusConnection *systemui_conn;);
+visual_tklock_new(DBusConnection *systemui_conn);
 static void
 visual_tklock_present_view(vtklock_t *vtklock);
 static void
@@ -140,7 +140,7 @@ tklock_open_handler(const char *interface,
     {
       if(!plugin_data->vtklock)
       {
-        plugin_data->vtklock = visual_tklock_new(plugin_data->data->session_bus);
+        plugin_data->vtklock = visual_tklock_new(plugin_data->data->system_bus);
         visual_tklock_set_unlock_handler(plugin_data->vtklock, vtklock_unlock_handler);
       }
 
@@ -242,7 +242,7 @@ plugin_init(system_ui_data *data)
                        tklock_close_handler,
                        data);
 
-/*  dbus_bus_add_match(data->session_bus,
+/*  dbus_bus_add_match(data->system_bus,
                      "type='signal',path='/com/nokia/mce/signal',interface='com.nokia.mce.signal',member='display_off'",
                      NULL);*/
 
@@ -773,7 +773,7 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
   GtkWidget *label_packer;
   GtkWidget *timestamp_packer;
   GtkWidget *timestamp_packer_align;
-  GtkWidget *icon_packer_align;
+  GtkWidget *icon_packer_align = NULL;
 
   DEBUG_FN;
 

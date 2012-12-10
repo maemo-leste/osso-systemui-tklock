@@ -11,3 +11,10 @@ Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, osso-systemui (>= 0.2.0), osso-powerup-shutdown-l10n-mr0 | osso-powerup-shutdown-l10n-mr, hildon-libs-l10n-mr | hildon-libs-l10n-mr0, osso-clock-l10n-mr | osso-clock-l10n-mr0
 Description: Touch screen and keypad lock UI
  This package contains the touch screen and keypad lock UI.
+
+Package: osso-systemui-tklock-dbg
+Architecture: any
+Section: devel
+Depends: osso-systemui-tklock (= ${Source-Version})
+Description: Touch screen and keypad lock UI debug symbls
+ This package contains the touch screen and keypad lock UI debug symbls
