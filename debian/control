@@ -18,3 +18,10 @@ Section: devel
 Depends: osso-systemui-tklock (= ${Source-Version})
 Description: Touch screen and keypad lock UI debug symbls
  This package contains the touch screen and keypad lock UI debug symbls
+
+Package: osso-systemui-tklock-dev
+Architecture: all
+Section: devel
+Depends: ${shlibs:Depends}
+Description: Touch screen and keypad lock UI development files
+ This package contains the touch screen and keypad lock UI development files
