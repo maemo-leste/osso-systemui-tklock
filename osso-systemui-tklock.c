@@ -22,7 +22,7 @@
 #include <sqlite3.h>
 
 #include <systemui.h>
-#include "osso-systemui-tklock.h"
+#include <systemui/tklock-dbus-names.h>
 
 #ifdef DEBUG
 
