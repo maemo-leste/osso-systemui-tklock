@@ -24,28 +24,6 @@
 #include <systemui.h>
 #include <systemui/tklock-dbus-names.h>
 
-#ifdef DEBUG
-
-#define SYSLOG_DEBUG(msg, ...) \
-  syslog(LOG_MAKEPRI(LOG_USER, LOG_DEBUG), "%s:%d:" msg "\n", __func__, __LINE__, ##__VA_ARGS__)
-#define DEBUG_FN SYSLOG_DEBUG("")
-
-#else
-  #define SYSLOG_DEBUG(msg, ...)
-
-#endif
-
-#define DEBUG_FN SYSLOG_DEBUG("")
-
-#define SYSLOG_ERROR(msg, ...) \
-  syslog(LOG_MAKEPRI(LOG_USER, LOG_ERR), "%s:%d:" msg "\n", __func__, __LINE__, ##__VA_ARGS__)
-
-#define SYSLOG_WARNING(msg, ...) \
-  syslog(LOG_MAKEPRI(LOG_USER, LOG_WARNING), "%s:%d:" msg "\n", __func__, __LINE__, ##__VA_ARGS__)
-
-#define SYSLOG_NOTICE(msg, ...) \
-  syslog(LOG_MAKEPRI(LOG_USER, LOG_NOTICE), "%s:%d:" msg "\n", __func__, __LINE__, ##__VA_ARGS__)
-
 typedef struct{
  GtkWidget *window;
  DBusConnection *systemui_conn;
@@ -123,7 +101,7 @@ tklock_open_handler(const char *interface,
   system_ui_handler_arg* hargs = ((system_ui_handler_arg*)args->data);
   int rv;
 
-  DEBUG_FN;
+  SYSTEMUI_DEBUG_FN;
 
   if( !check_plugin_arguments(args, supported_args, 1) &&
       !check_plugin_arguments(args, supported_args, 2) &&
@@ -132,7 +110,7 @@ tklock_open_handler(const char *interface,
     return 0;
   }
 
-  SYSLOG_DEBUG("hargs[4].data.u32[%u]", hargs[4].data.u32);
+  SYSTEMUI_DEBUG("hargs[4].data.u32[%u]", hargs[4].data.u32);
 
   switch(hargs[4].data.u32)
   {
@@ -187,11 +165,11 @@ tklock_close_handler(const char *interface,
                      system_ui_data *data,
                      system_ui_handler_arg *out)
 {
-  DEBUG_FN;
+  SYSTEMUI_DEBUG_FN;
 
   if(!plugin_data->data)
   {
-    SYSLOG_WARNING("tklock wasn't initialized, nop");
+    SYSTEMUI_WARNING("tklock wasn't initialized, nop");
     goto out;
   }
 
@@ -207,12 +185,12 @@ out:
 static gboolean
 tklock_setup_plugin(system_ui_data *data)
 {
-  DEBUG_FN;
+  SYSTEMUI_DEBUG_FN;
 
   plugin_data = g_slice_alloc0(sizeof(tklock_plugin_data));
   if(!plugin_data)
   {
-    SYSLOG_ERROR("failed to allocate memory for the plugin data");
+    SYSTEMUI_ERROR("failed to allocate memory for the plugin data");
     return FALSE;
   }
   plugin_data->data = data;
@@ -224,11 +202,11 @@ plugin_init(system_ui_data *data)
 {
   openlog("systemui-tklock", LOG_ALERT | LOG_USER, LOG_NDELAY);
 
-  DEBUG_FN;
+  SYSTEMUI_DEBUG_FN;
 
   if( !data )
   {
-    SYSLOG_ERROR("initialization parameter value is invalid");
+    SYSTEMUI_ERROR("initialization parameter value is invalid");
     return FALSE;
   }
 
@@ -254,7 +232,7 @@ vtklock_dbus_filter(DBusConnection *connection, DBusMessage *message, void *user
 {
   vtklock_t *vtklock = (vtklock_t*)user_data;
 
-  DEBUG_FN;
+  SYSTEMUI_DEBUG_FN;
 
   if(dbus_message_get_type(message) == DBUS_MESSAGE_TYPE_SIGNAL &&
      !g_strcmp0(dbus_message_get_member(message),"time_changed"))
@@ -271,7 +249,7 @@ vtklock_dbus_filter(DBusConnection *connection, DBusMessage *message, void *user
 static void
 vtklock_remove_clockd_dbus_filter(vtklock_t *vtklock)
 {
-  DEBUG_FN;
+  SYSTEMUI_DEBUG_FN;
 
   g_assert(vtklock->systemui_conn != NULL);
 
@@ -286,7 +264,7 @@ vtklock_remove_clockd_dbus_filter(vtklock_t *vtklock)
 static void
 vtklock_add_clockd_dbus_filter(vtklock_t *vtklock)
 {
-  DEBUG_FN;
+  SYSTEMUI_DEBUG_FN;
 
   g_assert(vtklock->systemui_conn != NULL);
 
@@ -297,16 +275,16 @@ vtklock_add_clockd_dbus_filter(vtklock_t *vtklock)
                                   vtklock_dbus_filter,
                                   vtklock,
                                   NULL))
-    SYSLOG_WARNING("failed to install dbus message filter");
+    SYSTEMUI_WARNING("failed to install dbus message filter");
 }
 
 void plugin_close(system_ui_data *data)
 {
-  DEBUG_FN;
+  SYSTEMUI_DEBUG_FN;
 
   if(plugin_data->data != data)
   {
-    SYSLOG_ERROR("systemui context is inconsistent");
+    SYSTEMUI_ERROR("systemui context is inconsistent");
   }
 
   if(plugin_data->data)
@@ -336,13 +314,13 @@ visual_tklock_new(DBusConnection *systemui_conn)
 {
   vtklock_t *vtklock;
 
-  DEBUG_FN;
+  SYSTEMUI_DEBUG_FN;
 
   vtklock = g_slice_alloc0(sizeof(vtklock_t));
 
   if(!vtklock)
   {
-    SYSLOG_ERROR("failed to allocate memory");
+    SYSTEMUI_ERROR("failed to allocate memory");
     return NULL;
   }
 
@@ -365,7 +343,7 @@ vtklock_update_date_time(vtklockts *ts)
   char time_buf[64];
   GConfClient *gc;
 
-  DEBUG_FN;
+  SYSTEMUI_DEBUG_FN;
 
   g_assert(ts != NULL);
 
@@ -403,7 +381,7 @@ vtklock_update_date_time(vtklockts *ts)
 static void
 visual_tklock_destroy_lock(vtklock_t *vtklock)
 {
-  DEBUG_FN;
+  SYSTEMUI_DEBUG_FN;
 
   if(!vtklock || !vtklock->window)
     return;
@@ -438,7 +416,7 @@ visual_tklock_destroy_lock(vtklock_t *vtklock)
 static void
 visual_tklock_destroy(vtklock_t *vtklock)
 {
-  DEBUG_FN;
+  SYSTEMUI_DEBUG_FN;
 
   if(!vtklock)
     return;
@@ -466,7 +444,7 @@ convert_str_to_index(const char *str)
   if(!strcmp("voice-mail", str))
     return 5;
 
-  SYSLOG_WARNING("Unknown string! return -1");
+  SYSTEMUI_WARNING("Unknown string! return -1");
 
   return -1;
 }
@@ -477,19 +455,19 @@ get_missed_events_cb(void*user_data, int numcols, char**column_text, char**colum
   vtklock_t *vtklock = (vtklock_t *)user_data;
   int index;
 
-  DEBUG_FN;
+  SYSTEMUI_DEBUG_FN;
 
   g_assert(vtklock != NULL);
 
   if(numcols != 3)
   {
-    SYSLOG_WARNING("select returned error values count");
+    SYSTEMUI_WARNING("select returned error values count");
     return -1;
   }
 
   if(!column_text[0] || !column_text[1] || !column_text[2])
   {
-    SYSLOG_WARNING("get_missed_events_cb: select return error values");
+    SYSTEMUI_WARNING("get_missed_events_cb: select return error values");
     return -1;
   }
 
@@ -515,12 +493,12 @@ get_missed_events_from_db(vtklock_t *vtklock)
   gchar * db_fname;
   struct stat sb;
 
-  DEBUG_FN;
+  SYSTEMUI_DEBUG_FN;
   db_fname = g_build_filename(g_get_home_dir(), ".config/hildon-desktop/notifications.db", NULL);
 
   if(stat(db_fname, &sb))
   {
-    SYSLOG_NOTICE("get_missed_events_from_db: error in reading db file info [%s]", db_fname);
+    SYSTEMUI_NOTICE("get_missed_events_from_db: error in reading db file info [%s]", db_fname);
   }
 
   if(g_notifications_mtime == sb.st_mtime)
@@ -540,7 +518,7 @@ get_missed_events_from_db(vtklock_t *vtklock)
                   SQLITE_OPEN_READONLY,
                   NULL) != SQLITE_OK)
   {
-    SYSLOG_WARNING("get_missed_events_from_db: error in opening db [%s]", db_fname);
+    SYSTEMUI_WARNING("get_missed_events_from_db: error in opening db [%s]", db_fname);
     goto db_close_out;
   }
 
@@ -556,7 +534,7 @@ get_missed_events_from_db(vtklock_t *vtklock)
                vtklock,
                &errmsg) != SQLITE_OK)
   {
-     SYSLOG_WARNING("Unable to get data about missed events from db: %s", errmsg);
+     SYSTEMUI_WARNING("Unable to get data about missed events from db: %s", errmsg);
      sqlite3_free(errmsg);
   }
 
@@ -571,7 +549,7 @@ out:
 
 gboolean vtklock_reset_slider_position(vtklock_t *vtklock)
 {
-  DEBUG_FN;
+  SYSTEMUI_DEBUG_FN;
 
   g_assert(vtklock != NULL);
   g_assert(vtklock->slider != NULL && GTK_IS_RANGE(vtklock->slider));
@@ -590,7 +568,7 @@ vtklock_create_date_time_widget(vtklockts *ts, gboolean portrait)
   GtkWidget *date_label, *time_label;
   PangoFontDescription *font_desc;
 
-  DEBUG_FN;
+  SYSTEMUI_DEBUG_FN;
 
   g_assert(ts != NULL && ts->time_label == NULL && ts->date_label == NULL);
 
@@ -669,7 +647,7 @@ vtklock_create_event_icons(vtklock_t *vtklock, gboolean portrait)
   GtkWidget *align;
   GtkWidget *icon_packer;
 
-  DEBUG_FN;
+  SYSTEMUI_DEBUG_FN;
 
   if(portrait)
   {
@@ -767,7 +745,7 @@ set_gdk_property(GtkWidget *widget, GdkAtom property, gboolean value)
 static void
 visual_tklock_set_hildon_flags(GtkWidget *window, gboolean portrait)
 {
-  DEBUG_FN;
+  SYSTEMUI_DEBUG_FN;
 
   g_assert(window);
 
@@ -788,7 +766,7 @@ visual_tklock_create_slider(gboolean portrait)
 {
   GtkWidget *slider;
 
-  DEBUG_FN;
+  SYSTEMUI_DEBUG_FN;
 
   slider  = portrait?hildon_gtk_vscale_new():hildon_gtk_hscale_new();
   g_object_set(slider, "jump-to-position", FALSE, NULL);
@@ -823,7 +801,7 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
   GtkRequisition sr;
   gboolean portrait;
 
-  DEBUG_FN;
+  SYSTEMUI_DEBUG_FN;
 
   if(vtklock->window)
     return;
@@ -1002,7 +980,7 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
 static void
 visual_tklock_present_view(vtklock_t *vtklock)
 {
-  DEBUG_FN;
+  SYSTEMUI_DEBUG_FN;
 
   g_assert(vtklock != NULL);
 
@@ -1031,7 +1009,7 @@ visual_tklock_present_view(vtklock_t *vtklock)
 static void
 vtklock_unlock_handler()
 {
-  DEBUG_FN;
+  SYSTEMUI_DEBUG_FN;
 
   systemui_do_callback( plugin_data->data, &system_ui_callback, 1);
 }
@@ -1039,7 +1017,7 @@ vtklock_unlock_handler()
 static void
 visual_tklock_set_unlock_handler(vtklock_t *vtklock, void(*unlock_handler)())
 {
-  DEBUG_FN;
+  SYSTEMUI_DEBUG_FN;
 
   g_assert(vtklock != NULL);
   vtklock->unlock_handler = unlock_handler;
@@ -1053,7 +1031,7 @@ slider_change_value_cb(GtkRange     *range,
 {
   vtklock_t *vtklock = (vtklock_t *)user_data;
 
-  DEBUG_FN;
+  SYSTEMUI_DEBUG_FN;
 
   g_assert(vtklock != NULL);
 
@@ -1081,7 +1059,7 @@ slider_value_changed_cb(GtkRange *range,
 {
   vtklock_t *vtklock = (vtklock_t *)user_data;
 
-  DEBUG_FN;
+  SYSTEMUI_DEBUG_FN;
 
   g_assert(vtklock != NULL);
 
