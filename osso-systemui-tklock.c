@@ -584,7 +584,7 @@ gboolean vtklock_reset_slider_position(vtklock_t *vtklock)
 }
 
 static GtkWidget *
-vtklock_create_date_time_widget(vtklockts *ts)
+vtklock_create_date_time_widget(vtklockts *ts, gboolean portrait)
 {
   GtkWidget *box,*time_box,*date_box;
   GtkWidget *date_label, *time_label;
@@ -594,9 +594,18 @@ vtklock_create_date_time_widget(vtklockts *ts)
 
   g_assert(ts != NULL && ts->time_label == NULL && ts->date_label == NULL);
 
-  box = gtk_vbox_new(FALSE, 4);
-  time_box = gtk_hbox_new(TRUE, 0);
-  date_box = gtk_hbox_new(TRUE, 0);
+  if(portrait)
+  {
+    box = gtk_hbox_new(FALSE, 4);
+    time_box = gtk_vbox_new(TRUE, 0);
+    date_box = gtk_vbox_new(TRUE, 0);
+  }
+  else
+  {
+    box = gtk_vbox_new(FALSE, 4);
+    time_box = gtk_hbox_new(TRUE, 0);
+    date_box = gtk_hbox_new(TRUE, 0);
+  }
 
   font_desc = pango_font_description_new();
   pango_font_description_set_family(font_desc, "Nokia Sans");
@@ -611,11 +620,26 @@ vtklock_create_date_time_widget(vtklockts *ts)
   hildon_helper_set_logical_color(date_label, GTK_RC_FG, GTK_STATE_NORMAL, "SecondaryTextColor");
   hildon_helper_set_logical_color(date_label, GTK_RC_FG, GTK_STATE_PRELIGHT, "SecondaryTextColor");
 
+  if(portrait)
+  {
+    gtk_label_set_angle(GTK_LABEL(date_label), 270.0);
+    gtk_label_set_angle(GTK_LABEL(time_label), 270.0);
+  }
+
   gtk_box_pack_start(GTK_BOX(time_box), time_label, TRUE, TRUE, FALSE);
   gtk_box_pack_start(GTK_BOX(date_box), date_label, TRUE, TRUE, FALSE);
 
-  gtk_box_pack_start(GTK_BOX(box), time_box, FALSE, FALSE, FALSE);
-  gtk_box_pack_start(GTK_BOX(box), date_box, FALSE, FALSE, FALSE);
+
+  if(portrait)
+  {
+    gtk_box_pack_end(GTK_BOX(box), time_box, FALSE, FALSE, FALSE);
+    gtk_box_pack_end(GTK_BOX(box), date_box, FALSE, FALSE, FALSE);
+  }
+  else
+  {
+    gtk_box_pack_start(GTK_BOX(box), time_box, FALSE, FALSE, FALSE);
+    gtk_box_pack_start(GTK_BOX(box), date_box, FALSE, FALSE, FALSE);
+  }
 
   ts->date_label=date_label;
   ts->time_label=time_label;
@@ -639,7 +663,7 @@ get_icon_name(guint index)
 }
 
 static GtkWidget *
-vtklock_create_event_icons(vtklock_t *vtklock)
+vtklock_create_event_icons(vtklock_t *vtklock, gboolean portrait)
 {
   int i;
   GtkWidget *align;
@@ -647,8 +671,16 @@ vtklock_create_event_icons(vtklock_t *vtklock)
 
   DEBUG_FN;
 
-  align = gtk_alignment_new(0.5, 0, 0, 0);
-  icon_packer = gtk_hbox_new(TRUE, 40);
+  if(portrait)
+  {
+    align = gtk_alignment_new(0, 0.5, 0, 0);
+    icon_packer = gtk_vbox_new(TRUE, 40);
+  }
+  else
+  {
+    align = gtk_alignment_new(0.5, 0, 0, 0);
+    icon_packer = gtk_hbox_new(TRUE, 40);
+  }
 
   for(i=0; i<6; i++)
   {
@@ -683,6 +715,15 @@ vtklock_create_event_icons(vtklock_t *vtklock)
                                     icon_name, 48,
                                     GTK_ICON_LOOKUP_NO_SVG,
                                     NULL);
+    if(pixbuf && portrait)
+    {
+      GdkPixbuf *pixbuf_rotated;
+
+      gtk_label_set_angle(GTK_LABEL(count_label), 270.0);
+      pixbuf_rotated = gdk_pixbuf_rotate_simple(pixbuf, GDK_PIXBUF_ROTATE_CLOCKWISE);
+      g_object_unref(pixbuf);
+      pixbuf = pixbuf_rotated;
+    }
 
     g_assert(pixbuf != NULL);
 
@@ -691,7 +732,10 @@ vtklock_create_event_icons(vtklock_t *vtklock)
 
     g_object_unref(pixbuf);
 
-    packer = gtk_hbox_new(TRUE, 0);
+    if(portrait)
+      packer = gtk_vbox_new(TRUE, 0);
+    else
+      packer = gtk_hbox_new(TRUE, 0);
 
     gtk_box_pack_start(GTK_BOX(packer), image, TRUE, TRUE, FALSE);
     gtk_box_pack_end(GTK_BOX(packer), count_label, TRUE, TRUE, FALSE);
@@ -721,7 +765,7 @@ set_gdk_property(GtkWidget *widget, GdkAtom property, gboolean value)
   }
 }
 static void
-visual_tklock_set_hildon_flags(GtkWidget *window)
+visual_tklock_set_hildon_flags(GtkWidget *window, gboolean portrait)
 {
   DEBUG_FN;
 
@@ -732,35 +776,37 @@ visual_tklock_set_hildon_flags(GtkWidget *window)
   gtk_window_set_skip_taskbar_hint(GTK_WINDOW(window), TRUE);
   hildon_gtk_window_set_do_not_disturb(GTK_WINDOW(window), TRUE);
 
-  /*if(landscape)
+  if(portrait)
   {
     set_gdk_property(window, gdk_atom_intern_static_string("_HILDON_PORTRAIT_MODE_SUPPORT"), TRUE);
     set_gdk_property(window, gdk_atom_intern_static_string("_HILDON_PORTRAIT_MODE_REQUEST"), TRUE);
-  }*/
+  }
 }
 
 static GtkWidget *
-visual_tklock_create_slider()
+visual_tklock_create_slider(gboolean portrait)
 {
   GtkWidget *slider;
 
   DEBUG_FN;
 
-  slider  = hildon_gtk_hscale_new();
+  slider  = portrait?hildon_gtk_vscale_new():hildon_gtk_hscale_new();
   g_object_set(slider, "jump-to-position", FALSE, NULL);
 
-  gtk_widget_set_name(slider, "sui-tklock-slider");
+  gtk_widget_set_name(slider, portrait?"sui-tklock-slider-portrait":"sui-tklock-slider");
 
-
-  gtk_widget_set_size_request(slider, 440, -1);
+  if(portrait)
+    gtk_widget_set_size_request(slider, -1, 440);
+  else
+    gtk_widget_set_size_request(slider, 440, -1);
 
   gtk_range_set_update_policy(GTK_RANGE(slider), GTK_UPDATE_DISCONTINUOUS);
   gtk_range_set_range(GTK_RANGE(slider),0.0, 40.0);
   gtk_range_set_value(GTK_RANGE(slider), 3.0);
 
   return slider;
-}
 
+}
 static void
 visual_tklock_create_view_whimsy(vtklock_t *vtklock)
 {
@@ -774,6 +820,8 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
   GtkWidget *timestamp_packer;
   GtkWidget *timestamp_packer_align;
   GtkWidget *icon_packer_align = NULL;
+  GtkRequisition sr;
+  gboolean portrait;
 
   DEBUG_FN;
 
@@ -782,6 +830,7 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
 
   get_missed_events_from_db(vtklock);
 
+  portrait = gdk_screen_height() > gdk_screen_width()?TRUE:FALSE;
   vtklock->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 
   gtk_window_set_title(GTK_WINDOW(vtklock->window), "visual_tklock");
@@ -793,6 +842,16 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
   if(pixbuf)
   {
     GtkStyle *gs;
+    if(portrait)
+    {
+
+      GdkPixbuf *pixbuf_rotated;
+
+      pixbuf_rotated = gdk_pixbuf_rotate_simple(pixbuf, GDK_PIXBUF_ROTATE_CLOCKWISE);
+      g_object_unref(pixbuf);
+      pixbuf = pixbuf_rotated;
+
+    }
 
     gdk_pixbuf_render_pixmap_and_mask(pixbuf, &bg_pixmap, NULL, 255);
 
@@ -819,7 +878,7 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
     gtk_widget_modify_bg(vtklock->window, GTK_STATE_NORMAL, &color);
   }
 
-  vtklock->slider = visual_tklock_create_slider();
+  vtklock->slider = visual_tklock_create_slider(portrait);
 
   vtklock->slider_status = 1;
 
@@ -835,34 +894,65 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
   label = gtk_label_new(dgettext("osso-system-lock", "secu_swipe_to_unlock"));
   hildon_helper_set_logical_font(label, "SystemFont");
 
-  timestamp_packer = vtklock_create_date_time_widget(&vtklock->ts);
+  if(portrait)
+      gtk_label_set_angle(GTK_LABEL(label), 270.0);
+
+  timestamp_packer = vtklock_create_date_time_widget(&vtklock->ts, portrait);
   g_assert(timestamp_packer != NULL);
 
   vtklock_update_date_time(&vtklock->ts);
 
-  timestamp_packer_align = gtk_alignment_new(0.5, 1.0, 0, 0);
+  if(portrait)
+    timestamp_packer_align = gtk_alignment_new(0.0, 0.5, 0, 0);
+  else
+    timestamp_packer_align = gtk_alignment_new(0.5, 1.0, 0, 0);
 
   gtk_container_add(GTK_CONTAINER(timestamp_packer_align), timestamp_packer);
 
   if(event_count)
-    icon_packer_align = vtklock_create_event_icons(vtklock);
+    icon_packer_align = vtklock_create_event_icons(vtklock, portrait);
 
-  label_align = gtk_alignment_new(0.5, 0.0, 0, 0);
-  gtk_container_add(GTK_CONTAINER(label_align), label);
-  label_packer = gtk_vbox_new(FALSE, 24);
+  if(portrait)
+  {
+    label_align = gtk_alignment_new(1.0, 0.5, 0, 0);
+    gtk_container_add(GTK_CONTAINER(label_align), label);
+    label_packer = gtk_hbox_new(FALSE, 24);
+  }
+  else
+  {
+    label_align = gtk_alignment_new(0.5, 0.0, 0, 0);
+    gtk_container_add(GTK_CONTAINER(label_align), label);
+    label_packer = gtk_vbox_new(FALSE, 24);
+  }
 
-  gtk_box_pack_start(GTK_BOX(label_packer), timestamp_packer_align, TRUE, TRUE, 0);
-  gtk_box_pack_start(GTK_BOX(label_packer), slider_align, FALSE, FALSE, 0);
+  if(portrait)
+  {
+    gtk_box_pack_end(GTK_BOX(label_packer), timestamp_packer_align, TRUE, TRUE, 0);
+    gtk_box_pack_end(GTK_BOX(label_packer), slider_align, FALSE, FALSE, 0);
+    gtk_box_pack_end(GTK_BOX(label_packer), label_align, FALSE, FALSE, 0);
 
-  if(event_count)
-    gtk_box_pack_end(GTK_BOX(label_packer), icon_packer_align, FALSE, FALSE, 0);
+    if(event_count)
+      gtk_box_pack_end(GTK_BOX(label_packer), icon_packer_align, FALSE, FALSE, 0);
 
-  gtk_box_pack_end(GTK_BOX(label_packer), label_align, FALSE, FALSE, 0);
-  window_align = gtk_alignment_new(0.5, 0.5, 0, 0);
-  gtk_alignment_set_padding(GTK_ALIGNMENT(window_align), 0, 0, 0, 16);
+    window_align = gtk_alignment_new(0.5, 0.5, 0, 0);
+    gtk_alignment_set_padding(GTK_ALIGNMENT(window_align), 8, 24, 1, 0);
+  }
+  else
+  {
+    gtk_box_pack_start(GTK_BOX(label_packer), timestamp_packer_align, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(label_packer), slider_align, FALSE, FALSE, 0);
+
+    if(event_count)
+      gtk_box_pack_end(GTK_BOX(label_packer), icon_packer_align, FALSE, FALSE, 0);
+
+    gtk_box_pack_end(GTK_BOX(label_packer), label_align, FALSE, FALSE, 0);
+
+    window_align = gtk_alignment_new(0.5, 0.5, 0, 0);
+    gtk_alignment_set_padding(GTK_ALIGNMENT(window_align), 0, 0, 0, 16);
+
+  }
 
   gtk_container_add(GTK_CONTAINER(window_align), label_packer);
-
   gtk_container_add(GTK_CONTAINER(vtklock->window), window_align);
 
   vtklock->slider_change_value_id = g_signal_connect_data(vtklock->slider,
@@ -878,35 +968,33 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
 
   gtk_widget_show_all(window_align);
 
+  gtk_widget_size_request(vtklock->slider, &sr);
+
   if(event_count)
   {
-    GtkRequisition r;
-    GtkRequisition sr;
-    GtkRequisition lr;
-
-    gtk_widget_size_request(vtklock->slider, &sr);
-    gtk_widget_size_request(icon_packer_align, &r);
-    gtk_widget_size_request(label_align, &lr);
-
+    if(portrait)
       gtk_alignment_set_padding(GTK_ALIGNMENT(icon_packer_align),
-                                30, 60-sr.height/2,
-                                0, 0);
+                                0, 0, 30, 60-sr.width/2);
+    else
+      gtk_alignment_set_padding(GTK_ALIGNMENT(icon_packer_align),
+                                30, 60-sr.height/2, 0, 0);
   }
   else
   {
     GtkRequisition r;
-    GtkRequisition sr;
 
-    gtk_widget_size_request(vtklock->slider, &sr);
     gtk_widget_size_request(label, &r);
 
-    gtk_alignment_set_padding(GTK_ALIGNMENT(label_align),
-                              0, (abs(480-sr.height)/2-48)-r.height, 0, 0);
+    if(portrait)
+      gtk_alignment_set_padding(GTK_ALIGNMENT(label_align),
+                                0, 0, (abs(480-sr.width)/2-48)-r.width, 0);
+    else
+      gtk_alignment_set_padding(GTK_ALIGNMENT(label_align),
+                                0, (abs(480-sr.height)/2-48)-r.height, 0, 0);
   }
 
   gtk_widget_realize(vtklock->window);
-
-  visual_tklock_set_hildon_flags(vtklock->window);
+  visual_tklock_set_hildon_flags(vtklock->window, portrait);
   gtk_widget_show_all(vtklock->window);
   vtklock_add_clockd_dbus_filter(vtklock);
 }
