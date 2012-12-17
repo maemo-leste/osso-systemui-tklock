@@ -1,15 +1,31 @@
 This package was debianized by Ivaylo Dimitrov <freemangordon@abv.bg> on
-Thu, 16 Aug 2012 08:56:37 +0300.
+Sun, 17 Dec 2012 23:39:33 +0200.
 
-This package may contain parts derived by disassembling of binaries under
-Nokia's copyright, see http://tablets-dev.nokia.com/maemo-dev-env-downloads.php
+Copyright: 2012 (C) Ivaylo Dimitrov <freemangordon@abv.bg>
 
-The original licensing conditions apply to all those derived parts as well
-and you accept those by using this package.
+License:
+
+    This package is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; either
+    version 2 of the License, or (at your option) any later version.
+
+    This package is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public
+    License along with this package; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+
+On Debian systems, the complete text of the GNU Lesser General
+Public License can be found in `/usr/share/common-licenses/LGPL'.
+
 
 The Debian packaging is (C) 2012, Ivaylo Dimitrov <freemangordon@abv.bg> and
 is licensed under the GPL, see `/usr/share/common-licenses/GPL'.
 
 
-
-
+# Please also look if there are files or directories which have a
+# different copyright/license attached and list them here.

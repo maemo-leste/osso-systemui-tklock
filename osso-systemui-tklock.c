@@ -1,3 +1,27 @@
+/**
+   @file osso-systemui-tklock.c
+
+   @brief Maemo systemui tklock plugin
+
+   Copyright (C) 2012 Ivaylo Dimitrov <freemangordon@abv.bg>
+
+   This file is part of osso-systemui-tklock.
+
+   osso-systemui-tklock is free software;
+   you can redistribute it and/or modify it under the terms of the
+   GNU Lesser General Public License version 2.1 as published by the
+   Free Software Foundation.
+
+   osso-systemui-tklock is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public
+   License along with osso-systemui-powerkeymenu.
+   If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -467,7 +491,7 @@ get_missed_events_cb(void*user_data, int numcols, char**column_text, char**colum
 
   if(!column_text[0] || !column_text[1] || !column_text[2])
   {
-    SYSTEMUI_WARNING("get_missed_events_cb: select return error values");
+    SYSTEMUI_WARNING("select return error values");
     return -1;
   }
 
@@ -498,7 +522,7 @@ get_missed_events_from_db(vtklock_t *vtklock)
 
   if(stat(db_fname, &sb))
   {
-    SYSTEMUI_NOTICE("get_missed_events_from_db: error in reading db file info [%s]", db_fname);
+    SYSTEMUI_NOTICE("error in reading db file info [%s]", db_fname);
   }
 
   if(g_notifications_mtime == sb.st_mtime)
@@ -518,7 +542,7 @@ get_missed_events_from_db(vtklock_t *vtklock)
                   SQLITE_OPEN_READONLY,
                   NULL) != SQLITE_OK)
   {
-    SYSTEMUI_WARNING("get_missed_events_from_db: error in opening db [%s]", db_fname);
+    SYSTEMUI_WARNING("error in opening db [%s]", db_fname);
     goto db_close_out;
   }
 
