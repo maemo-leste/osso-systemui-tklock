@@ -395,6 +395,8 @@ vtklock_update_date_time(vtklockts *ts)
   else
     msgid = tm.tm_hour > 11 ? "wdgt_va_12h_time_pm" : "wdgt_va_12h_time_am";
 
+  g_object_unref(gc);
+
   time_format_time(&tm,
                    dgettext("hildon-libs", msgid),
                    time_buf, sizeof(time_buf));
