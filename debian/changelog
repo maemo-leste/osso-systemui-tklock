@@ -1,3 +1,12 @@
+osso-systemui-tklock (0.3.1.0+0cssu0) unstable; urgency=low
+
+  * Add support for autorotation
+  * Add portrait background for alpha theme
+  * Enable autorotation only if gconf key /system/systemui/tklock/auto_rotation is true
+  * Fix memory leak, unref gconf client
+
+ -- Ivaylo Dimitrov <freemangordon@abv.bg>  Wed, 09 Jan 2013 17:55:34 +0200
+
 osso-systemui-tklock (0.3.0.3+0cssu0) unstable; urgency=low
 
   * Don't destroy event eater window on screen dimmed->screen unlocked transition
