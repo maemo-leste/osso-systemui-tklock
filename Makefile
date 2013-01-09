@@ -6,7 +6,7 @@ clean:
 install: libsystemuiplugin_tklock.so
 	install -d $(DESTDIR)/usr/lib/systemui
 	install -m 644 libsystemuiplugin_tklock.so $(DESTDIR)/usr/lib/systemui
-	install -d $(DESTDIR)/usr/share/themes/beta/backgrounds
+	install -d $(DESTDIR)/usr/share/themes/alpha/backgrounds
 	install -m 644 share/themes/alpha-lockslider-portrait.png $(DESTDIR)/usr/share/themes/alpha/backgrounds/lockslider-portrait.png
 
 libsystemuiplugin_tklock.so: osso-systemui-tklock.c eventeater.c
