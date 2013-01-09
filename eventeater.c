@@ -70,7 +70,7 @@ one_input_event_eater_cb(GdkXEvent *gdkxevent,
     ee_destroy_window();
   }
 
-  return GDK_FILTER_CONTINUE;
+  return GDK_FILTER_REMOVE;
 }
 
 void

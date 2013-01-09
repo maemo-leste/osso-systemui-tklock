@@ -172,7 +172,19 @@ tklock_close_handler(const char *interface,
                      system_ui_data *data,
                      system_ui_handler_arg *out)
 {
+  int supported_args[3] = {'b'};
+  dbus_bool_t locked;
+  system_ui_handler_arg* hargs = ((system_ui_handler_arg*)args->data);
+
   SYSTEMUI_DEBUG_FN;
+
+  if(check_plugin_arguments(args, supported_args, 1))
+  {
+    locked = hargs[4].data.bool_val;
+    SYSTEMUI_DEBUG("hargs[4].data.bool_val[%u]", hargs[4].data.bool_val);
+  }
+  else
+    locked = TRUE;
 
   if(!plugin_data->data)
   {
@@ -183,7 +195,7 @@ tklock_close_handler(const char *interface,
   if(plugin_data->vtklock)
     visual_tklock_destroy_lock(plugin_data->vtklock);
 
-  if(plugin_data->one_input_mode_event == 0 || plugin_data->one_input_mode_event == ButtonRelease)
+  if(locked || plugin_data->one_input_mode_event == ButtonRelease)
   {
     plugin_data->one_input_mode_event = 0;
     ee_destroy_window();
