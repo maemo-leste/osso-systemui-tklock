@@ -46,46 +46,16 @@
 #include <sqlite3.h>
 
 #include <systemui.h>
-#include <systemui/tklock-dbus-names.h>
 
-typedef struct{
+#include "osso-systemui-tklock-priv.h"
+#include "eventeater.h"
+
+/*typedef struct{
  GtkWidget *window;
  DBusConnection *systemui_conn;
  gboolean window_hidden;
 } tklock;
-
-typedef struct {
-  GtkWidget *time_label;
-  GtkWidget *date_label;
-} vtklockts;
-
-typedef struct {
-  guint count;
-  guint hint;
-}event_t;
-
-typedef struct {
-  GtkWidget *window;
-  vtklockts ts;
-  GtkWidget *slider;
-  guint slider_status;
-  gdouble slider_value;
-  GtkAdjustment *slider_adjustment;
-  DBusConnection *systemui_conn;
-  int priority;
-  guint update_date_time_cb_tag;
-  void(*unlock_handler)();
-  event_t event[6];
-  gulong slider_value_changed_id;
-  gulong slider_change_value_id;
-}vtklock_t;
-
-typedef struct{
-  system_ui_data *data;
-  guint cb_argc;
-  vtklock_t *vtklock;
-} tklock_plugin_data;
-
+*/
 tklock_plugin_data *plugin_data = NULL;
 system_ui_callback_t system_ui_callback = {0,};
 
@@ -138,8 +108,9 @@ tklock_open_handler(const char *interface,
 
   switch(hargs[4].data.u32)
   {
-    case 5:
+    case TKLOCK_ENABLE_VISUAL:
     {
+      ee_destroy_window();
       if(!plugin_data->vtklock)
       {
         plugin_data->vtklock = visual_tklock_new(plugin_data->data->system_bus);
@@ -151,21 +122,33 @@ tklock_open_handler(const char *interface,
 
       visual_tklock_present_view(plugin_data->vtklock);
 
-      plugin_data->cb_argc = 5;
+      plugin_data->mode = TKLOCK_ENABLE_VISUAL;
       break;
     }
-    case 1:
+    case TKLOCK_ENABLE:
     {
-      if(plugin_data->cb_argc == 5)
+      ee_destroy_window();
+      if(plugin_data->mode == TKLOCK_ONEINPUT)
+      {
+        do_callback(plugin_data->data, &system_ui_callback, TKLOCK_ONEINPUT);
+      }
+      else if(plugin_data->mode == TKLOCK_ENABLE_VISUAL)
       {
         if(plugin_data->vtklock && plugin_data->vtklock->window)
           visual_tklock_destroy_lock(plugin_data->vtklock);
       }
 
-      plugin_data->cb_argc = 1;
+      plugin_data->mode = TKLOCK_ENABLE;
 
       break;
     }
+    case TKLOCK_ONEINPUT:
+    {
+      ee_create_window(plugin_data);
+      plugin_data->mode = TKLOCK_ONEINPUT;
+      break;
+    }
+
   default:
     return 0;
   }
@@ -200,10 +183,25 @@ tklock_close_handler(const char *interface,
   if(plugin_data->vtklock)
     visual_tklock_destroy_lock(plugin_data->vtklock);
 
-  systemui_free_callback(&system_ui_callback);
+  if(plugin_data->one_input_mode_event == 0 || plugin_data->one_input_mode_event == ButtonRelease)
+  {
+    plugin_data->one_input_mode_event = 0;
+    ee_destroy_window();
+    systemui_free_callback(&system_ui_callback);
+  }
 
 out:
   return 'v';
+}
+
+static void
+one_input_mode_handler()
+{
+  SYSTEMUI_DEBUG_FN;
+
+  systemui_do_callback(plugin_data->data, &system_ui_callback, TKLOCK_ENABLE);
+  systemui_do_callback(plugin_data->data, &system_ui_callback, TKLOCK_ONEINPUT);
+  systemui_free_callback(&system_ui_callback);
 }
 
 static gboolean
@@ -218,6 +216,8 @@ tklock_setup_plugin(system_ui_data *data)
     return FALSE;
   }
   plugin_data->data = data;
+  plugin_data->one_input_mode_finished_handler = one_input_mode_handler;
+  plugin_data->one_input_mode_event = 0;
   return TRUE;
 }
 
@@ -1072,7 +1072,7 @@ vtklock_unlock_handler()
 {
   SYSTEMUI_DEBUG_FN;
 
-  systemui_do_callback( plugin_data->data, &system_ui_callback, 1);
+  systemui_do_callback( plugin_data->data, &system_ui_callback, TKLOCK_ENABLE);
 }
 
 static void

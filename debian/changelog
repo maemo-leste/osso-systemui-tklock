@@ -1,3 +1,9 @@
+osso-systemui-tklock (0.3.0.2+0cssu0) unstable; urgency=low
+
+  * Add one input mode handling (event eater)
+
+ -- Ivaylo Dimitrov <freemangordon@abv.bg>  Wed, 09 Jan 2013 00:25:34 +0200
+
 osso-systemui-tklock (0.3.0.1+0cssu0) unstable; urgency=low
 
   * Fix missing background image when top application is in portrait
