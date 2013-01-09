@@ -809,42 +809,22 @@ visual_tklock_create_slider(gboolean force_fake_portrait)
   return slider;
 
 }
+
 static void
-visual_tklock_create_view_whimsy(vtklock_t *vtklock)
+fill_background(vtklock_t *vtklock, gboolean portrait, gboolean fake)
 {
   GdkPixbuf *pixbuf;
   GdkPixmap *bg_pixmap = NULL;
-  GtkWidget *slider_align;
-  GtkWidget *window_align;
-  GtkWidget *label;
-  GtkWidget *label_align;
-  GtkWidget *label_packer;
-  GtkWidget *timestamp_packer;
-  GtkWidget *timestamp_packer_align;
-  GtkWidget *icon_packer_align = NULL;
-  GtkRequisition sr;
-  gboolean force_fake_portrait;
 
-  SYSTEMUI_DEBUG_FN;
-
-  if(vtklock->window)
-    return;
-
-  get_missed_events_from_db(vtklock);
-
-  force_fake_portrait = gdk_screen_height() > gdk_screen_width()?TRUE:FALSE;
-  vtklock->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-
-  gtk_window_set_title(GTK_WINDOW(vtklock->window), "visual_tklock");
-  gtk_window_set_decorated(GTK_WINDOW(vtklock->window), FALSE);
-  gtk_window_set_keep_above(GTK_WINDOW(vtklock->window), TRUE);
-
-  pixbuf = gdk_pixbuf_new_from_file("/etc/hildon/theme/backgrounds/lockslider.png", NULL);
+  if (portrait)
+    pixbuf = gdk_pixbuf_new_from_file("/etc/hildon/theme/backgrounds/lockslider-portrait.png", NULL);
+  else
+    pixbuf = gdk_pixbuf_new_from_file("/etc/hildon/theme/backgrounds/lockslider.png", NULL);
 
   if(pixbuf)
   {
     GtkStyle *gs;
-    if(force_fake_portrait)
+    if(fake)
     {
 
       GdkPixbuf *pixbuf_rotated;
@@ -878,6 +858,63 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
     /* FIXME - what is the real color value? */
     GdkColor color = {0, 0, 0, 128};
     gtk_widget_modify_bg(vtklock->window, GTK_STATE_NORMAL, &color);
+  }
+}
+
+static gboolean
+configure_event_cb(GtkWidget *widget, GdkEvent *event, gpointer data)
+{
+  g_return_val_if_fail(widget != NULL, FALSE);
+  g_return_val_if_fail(event->type == GDK_CONFIGURE, FALSE);
+  g_return_val_if_fail(data != NULL, FALSE);
+
+  fill_background((vtklock_t *)data, (gdk_screen_height() > gdk_screen_width()), FALSE);
+
+  return FALSE;
+}
+
+static void
+visual_tklock_create_view_whimsy(vtklock_t *vtklock)
+{
+  GdkPixbuf *pixbuf;
+  GtkWidget *slider_align;
+  GtkWidget *window_align;
+  GtkWidget *label;
+  GtkWidget *label_align;
+  GtkWidget *label_packer;
+  GtkWidget *timestamp_packer;
+  GtkWidget *timestamp_packer_align;
+  GtkWidget *icon_packer_align = NULL;
+  GtkRequisition sr;
+  gboolean force_fake_portrait;
+
+  SYSTEMUI_DEBUG_FN;
+
+  if(vtklock->window)
+    return;
+
+  get_missed_events_from_db(vtklock);
+
+  force_fake_portrait = gdk_screen_height() > gdk_screen_width()?TRUE:FALSE;
+  vtklock->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+
+  gtk_window_set_title(GTK_WINDOW(vtklock->window), "visual_tklock");
+  gtk_window_set_decorated(GTK_WINDOW(vtklock->window), FALSE);
+  gtk_window_set_keep_above(GTK_WINDOW(vtklock->window), TRUE);
+
+  /* Check if we have force_fake_portrait lockslider background */
+  pixbuf = gdk_pixbuf_new_from_file("/etc/hildon/theme/backgrounds/lockslider-portrait.png", NULL);
+  if(pixbuf)
+  {
+    g_object_unref(pixbuf);
+    hildon_gtk_window_set_portrait_flags(GTK_WINDOW(vtklock->window), HILDON_PORTRAIT_MODE_SUPPORT);
+    g_signal_connect(G_OBJECT(vtklock->window), "configure-event", G_CALLBACK(configure_event_cb), vtklock);
+    fill_background(vtklock, force_fake_portrait, FALSE);
+    force_fake_portrait = FALSE;
+  }
+  else
+  {
+    fill_background(vtklock, FALSE, force_fake_portrait);
   }
 
   vtklock->slider = visual_tklock_create_slider(force_fake_portrait);
