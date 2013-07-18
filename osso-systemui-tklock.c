@@ -50,12 +50,6 @@
 #include "osso-systemui-tklock-priv.h"
 #include "eventeater.h"
 
-/*typedef struct{
- GtkWidget *window;
- DBusConnection *systemui_conn;
- gboolean window_hidden;
-} tklock;
-*/
 tklock_plugin_data *plugin_data = NULL;
 system_ui_callback_t system_ui_callback = {0,};
 
