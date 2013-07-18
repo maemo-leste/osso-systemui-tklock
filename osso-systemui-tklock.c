@@ -28,6 +28,7 @@
 #include <libintl.h>
 #include <locale.h>
 #include <sys/stat.h>
+#include <math.h>
 
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
@@ -1118,22 +1119,22 @@ slider_change_value_cb(GtkRange     *range,
 
   g_assert(vtklock != NULL);
 
-  if((value-3.0) > 0.5)
+  if((3.0 - value) < 0.5)
   {
-    if(
-       (value - vtklock->slider_adjustment->upper < 0.899999976) &&
-       (value - vtklock->slider_adjustment->upper > -0.899999976)
-      )
+    if(fabs(value - vtklock->slider_adjustment->upper) < 0.899999976)
     {
-      vtklock->slider_adjustment->lower = 4;
+      vtklock->slider_status = 4;
 
       if(vtklock->unlock_handler)
         vtklock->unlock_handler();
     }
-    if(scroll != GTK_SCROLL_STEP_BACKWARD)
-      return FALSE;
+    else
+    {
+      if(scroll == GTK_SCROLL_JUMP)
+        return FALSE;
+    }
   }
-  return FALSE;
+  return TRUE;
 }
 
 static void
@@ -1152,10 +1153,7 @@ slider_value_changed_cb(GtkRange *range,
 
     value = gtk_range_get_value(range);
 
-    if(
-       (vtklock->slider_adjustment->upper-value < 5) &&
-       (vtklock->slider_adjustment->upper-value >-5)
-       )
+    if(fabs(vtklock->slider_adjustment->upper-value) < 5.0)
     {
       gtk_range_set_value(GTK_RANGE(vtklock->slider), vtklock->slider_adjustment->upper);
       vtklock->slider_value = vtklock->slider_adjustment->upper;
