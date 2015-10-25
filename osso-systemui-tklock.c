@@ -435,7 +435,7 @@ visual_tklock_destroy_lock(vtklock_t *vtklock)
   if(g_signal_handler_is_connected(vtklock->slider,vtklock->slider_value_changed_id))
     g_signal_handler_disconnect(vtklock->slider,vtklock->slider_value_changed_id);
 
-  ipm_hide_window(vtklock->window);
+  ipm_hide_window(GTK_WINDOW(vtklock->window));
   gtk_widget_unrealize(vtklock->window);
   gtk_widget_destroy(vtklock->window);
 
@@ -1077,7 +1077,7 @@ visual_tklock_present_view(vtklock_t *vtklock)
 
   gtk_widget_realize(vtklock->window);
   gdk_flush();
-  ipm_show_window(vtklock->window, vtklock->priority);
+  ipm_show_window(GTK_WINDOW(vtklock->window), vtklock->priority);
   gdk_window_invalidate_rect(vtklock->window->window, NULL, TRUE);
   gdk_window_process_all_updates();
   gdk_flush();
