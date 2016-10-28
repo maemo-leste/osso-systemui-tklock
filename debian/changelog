@@ -1,3 +1,10 @@
+osso-systemui-tklock (0.3.1.1+0cssu2) unstable; urgency=low
+
+  * Update parameters for window hide/show functions, again
+  * depend on RE osso-systemui-dev package version
+
+ -- Ivaylo Dimitrov <freemangordon@abv.bg>  Thu, 27 Oct 2016 17:55:33 +0200
+
 osso-systemui-tklock (0.3.1.1+0cssu1) unstable; urgency=low
 
   * Update parameters for window hide/show functions
