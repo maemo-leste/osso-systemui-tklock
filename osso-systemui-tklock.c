@@ -682,7 +682,7 @@ vtklock_create_event_icons(vtklock_t *vtklock, gboolean force_fake_portrait)
 
   SYSTEMUI_DEBUG_FN;
 
-  if(force_fake_portrait)
+  if (force_fake_portrait)
   {
     align = gtk_alignment_new(0, 0.5, 0, 0);
     icon_packer = gtk_vbox_new(TRUE, 40);
@@ -693,7 +693,7 @@ vtklock_create_event_icons(vtklock_t *vtklock, gboolean force_fake_portrait)
     icon_packer = gtk_hbox_new(TRUE, 40);
   }
 
-  for(i=0; i<6; i++)
+  for (i = 0; i < 6; i++)
   {
     PangoFontDescription *font_desc;
     GtkWidget *count_label;
@@ -703,7 +703,7 @@ vtklock_create_event_icons(vtklock_t *vtklock, gboolean force_fake_portrait)
     gchar count_str[10];
     const char *icon_name;
 
-    if(!vtklock->event[i].count)
+    if (!vtklock->event[i].count)
       continue;
 
     icon_name = get_icon_name(i);
@@ -713,7 +713,8 @@ vtklock_create_event_icons(vtklock_t *vtklock, gboolean force_fake_portrait)
     pango_font_description_set_family(font_desc, "Nokia Sans");
     pango_font_description_set_absolute_size(font_desc, 25 * PANGO_SCALE);
 
-    g_assert(g_snprintf(count_str, sizeof(count_str), "%d", vtklock->event[i].count) != 0);
+    g_assert(g_snprintf(count_str, sizeof(count_str),
+                        "%d", vtklock->event[i].count) != 0);
 
     count_label = gtk_label_new(count_str);
     g_assert(count_label != NULL);
@@ -726,12 +727,13 @@ vtklock_create_event_icons(vtklock_t *vtklock, gboolean force_fake_portrait)
                                     icon_name, 48,
                                     GTK_ICON_LOOKUP_NO_SVG,
                                     NULL);
-    if(pixbuf && force_fake_portrait)
+    if (pixbuf && force_fake_portrait)
     {
       GdkPixbuf *pixbuf_rotated;
 
       gtk_label_set_angle(GTK_LABEL(count_label), 270.0);
-      pixbuf_rotated = gdk_pixbuf_rotate_simple(pixbuf, GDK_PIXBUF_ROTATE_CLOCKWISE);
+      pixbuf_rotated = gdk_pixbuf_rotate_simple(pixbuf,
+                                                GDK_PIXBUF_ROTATE_CLOCKWISE);
       g_object_unref(pixbuf);
       pixbuf = pixbuf_rotated;
     }
@@ -743,7 +745,7 @@ vtklock_create_event_icons(vtklock_t *vtklock, gboolean force_fake_portrait)
 
     g_object_unref(pixbuf);
 
-    if(force_fake_portrait)
+    if (force_fake_portrait)
       packer = gtk_vbox_new(TRUE, 0);
     else
       packer = gtk_hbox_new(TRUE, 0);
