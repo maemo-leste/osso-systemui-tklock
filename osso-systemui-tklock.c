@@ -51,6 +51,8 @@
 #include "osso-systemui-tklock-priv.h"
 #include "eventeater.h"
 
+#define HILDON_BACKGROUNDS_DIR "/etc/hildon/theme/backgrounds/"
+
 tklock_plugin_data *plugin_data = NULL;
 system_ui_callback_t system_ui_callback = {0,};
 
@@ -784,15 +786,24 @@ visual_tklock_set_hildon_flags(GtkWidget *window, gboolean force_fake_portrait)
 
   g_assert(window);
 
-  set_gdk_property(window, gdk_atom_intern_static_string("_HILDON_WM_ACTION_NO_TRANSITIONS"), TRUE);
+  set_gdk_property(
+        window,
+        gdk_atom_intern_static_string("_HILDON_WM_ACTION_NO_TRANSITIONS"),
+        TRUE);
   gtk_window_fullscreen(GTK_WINDOW(window));
   gtk_window_set_skip_taskbar_hint(GTK_WINDOW(window), TRUE);
   hildon_gtk_window_set_do_not_disturb(GTK_WINDOW(window), TRUE);
 
   if(force_fake_portrait)
   {
-    set_gdk_property(window, gdk_atom_intern_static_string("_HILDON_PORTRAIT_MODE_SUPPORT"), TRUE);
-    set_gdk_property(window, gdk_atom_intern_static_string("_HILDON_PORTRAIT_MODE_REQUEST"), TRUE);
+    set_gdk_property(
+          window,
+          gdk_atom_intern_static_string("_HILDON_PORTRAIT_MODE_SUPPORT"),
+          TRUE);
+    set_gdk_property(
+          window,
+          gdk_atom_intern_static_string("_HILDON_PORTRAIT_MODE_REQUEST"),
+          TRUE);
   }
 }
 
@@ -800,21 +811,25 @@ static GtkWidget *
 visual_tklock_create_slider(gboolean force_fake_portrait)
 {
   GtkWidget *slider;
+  gint width = (gdk_screen_get_width(gdk_screen_get_default()) * 440) / 800;
 
   SYSTEMUI_DEBUG_FN;
 
-  slider  = force_fake_portrait?hildon_gtk_vscale_new():hildon_gtk_hscale_new();
+  slider = force_fake_portrait ? hildon_gtk_vscale_new() :
+                                 hildon_gtk_hscale_new();
   g_object_set(slider, "jump-to-position", FALSE, NULL);
 
-  gtk_widget_set_name(slider, force_fake_portrait?"sui-tklock-slider-portrait":"sui-tklock-slider");
+  gtk_widget_set_name(slider,
+                      force_fake_portrait ? "sui-tklock-slider-portrait" :
+                                            "sui-tklock-slider");
 
-  if(force_fake_portrait)
-    gtk_widget_set_size_request(slider, -1, 440);
+  if (force_fake_portrait)
+    gtk_widget_set_size_request(slider, -1, width);
   else
-    gtk_widget_set_size_request(slider, 440, -1);
+    gtk_widget_set_size_request(slider, width, -1);
 
   gtk_range_set_update_policy(GTK_RANGE(slider), GTK_UPDATE_DISCONTINUOUS);
-  gtk_range_set_range(GTK_RANGE(slider),0.0, 40.0);
+  gtk_range_set_range(GTK_RANGE(slider), 0.0, 40.0);
   gtk_range_set_value(GTK_RANGE(slider), 3.0);
 
   return slider;
@@ -825,29 +840,51 @@ static void
 fill_background(vtklock_t *vtklock, gboolean portrait, gboolean fake)
 {
   GdkPixbuf *pixbuf;
-  GdkPixmap *bg_pixmap = NULL;
 
   if (portrait)
-    pixbuf = gdk_pixbuf_new_from_file("/etc/hildon/theme/backgrounds/lockslider-portrait.png", NULL);
+  {
+    pixbuf = gdk_pixbuf_new_from_file(
+          HILDON_BACKGROUNDS_DIR "lockslider-portrait.png", NULL);
+  }
   else
-    pixbuf = gdk_pixbuf_new_from_file("/etc/hildon/theme/backgrounds/lockslider.png", NULL);
+  {
+    pixbuf =
+        gdk_pixbuf_new_from_file(HILDON_BACKGROUNDS_DIR "lockslider.png", NULL);
+  }
 
-  if(pixbuf)
+  if (pixbuf)
   {
     GtkStyle *gs;
-    if(fake)
+    GdkPixmap *bg_pixmap = NULL;
+    if (fake)
     {
+      GdkPixbuf *pixbuf_rotated =
+          gdk_pixbuf_rotate_simple(pixbuf, GDK_PIXBUF_ROTATE_CLOCKWISE);
 
-      GdkPixbuf *pixbuf_rotated;
-
-      pixbuf_rotated = gdk_pixbuf_rotate_simple(pixbuf, GDK_PIXBUF_ROTATE_CLOCKWISE);
       g_object_unref(pixbuf);
       pixbuf = pixbuf_rotated;
+    }
 
+    if (pixbuf)
+    {
+      int pw = gdk_pixbuf_get_width(pixbuf);
+      int ph = gdk_pixbuf_get_height(pixbuf);
+      GdkScreen *screen = gdk_screen_get_default();
+      gint w = gdk_screen_get_width(screen);
+      gint h = gdk_screen_get_height(screen);
+
+      /* TODO - check the condition in portrait mode */
+      if (pw != w || ph != h)
+      {
+        GdkPixbuf *pixbuf_scaled =
+            gdk_pixbuf_scale_simple(pixbuf, w, h, GDK_INTERP_BILINEAR);
+
+        g_object_unref(pixbuf);
+        pixbuf = pixbuf_scaled;
+      }
     }
 
     gdk_pixbuf_render_pixmap_and_mask(pixbuf, &bg_pixmap, NULL, 255);
-
     g_object_unref(pixbuf);
 
     /* FIXME */
