@@ -15,7 +15,7 @@ Description: Touch screen and keypad lock UI
 Package: osso-systemui-tklock-dbg
 Architecture: any
 Section: devel
-Depends: osso-systemui-tklock (= ${Source-Version})
+Depends: osso-systemui-tklock (= ${source:Version})
 Description: Touch screen and keypad lock UI debug symbls
  This package contains the touch screen and keypad lock UI debug symbls
 
