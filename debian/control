@@ -30,6 +30,7 @@ Description: Touch screen and keypad lock UI
 
 Package: osso-systemui-tklock-dev
 Architecture: all
+Multi-arch: foreign
 Section: devel
 Description: Touch screen and keypad lock UI development files
  This package contains the touch screen and keypad lock UI development files
