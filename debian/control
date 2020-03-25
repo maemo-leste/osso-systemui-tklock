@@ -1,27 +1,46 @@
 Source: osso-systemui-tklock
 Section: misc
 Maintainer: Ivaylo Dimmitrov <freemangordon@abv.bg>
-Build-Depends: debhelper (>= 5), pkg-config, libhildon1-dev, libgconf2-dev, libalarm-dev,
- libnotify-dev, libgtk2.0-dev, libdbus-1-dev, libglib2.0-dev, libtime-dev, libsqlite3-dev, osso-systemui-dev (>= 0.2.0)
+Build-Depends:
+ debhelper (>= 5),
+ pkg-config,
+ libhildon1-dev,
+ libgconf2-dev,
+ libalarm-dev,
+ libnotify-dev,
+ libgtk2.0-dev,
+ libdbus-1-dev,
+ libglib2.0-dev,
+ libtime-dev,
+ libsqlite3-dev,
+ osso-systemui-dev (>= 0.2.0),
 Priority: optional
 Standards-Version: 3.7.2
 
 Package: osso-systemui-tklock
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, osso-systemui (>= 0.2.0), osso-powerup-shutdown-l10n-mr0 | osso-powerup-shutdown-l10n-mr, hildon-libs-l10n-mr | hildon-libs-l10n-mr0, osso-clock-l10n-mr | osso-clock-l10n-mr0
+Depends:
+ ${shlibs:Depends},
+ ${misc:Depends},
+ osso-systemui (>= 0.2.0),
+ osso-powerup-shutdown-l10n-mr0 | osso-powerup-shutdown-l10n-mr,
+ hildon-libs-l10n-mr | hildon-libs-l10n-mr0,
+ osso-clock-l10n-mr | osso-clock-l10n-mr0,
 Description: Touch screen and keypad lock UI
  This package contains the touch screen and keypad lock UI.
 
 Package: osso-systemui-tklock-dbg
 Architecture: any
 Section: devel
-Depends: osso-systemui-tklock (= ${source:Version})
+Depends:
+ osso-systemui-tklock (= ${source:Version}),
 Description: Touch screen and keypad lock UI debug symbls
  This package contains the touch screen and keypad lock UI debug symbls
 
 Package: osso-systemui-tklock-dev
 Architecture: all
 Section: devel
-Depends: ${shlibs:Depends}
+Depends:
+ ${shlibs:Depends},
 Description: Touch screen and keypad lock UI development files
  This package contains the touch screen and keypad lock UI development files
