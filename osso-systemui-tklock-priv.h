@@ -26,38 +26,15 @@
 
 #include <systemui/tklock-dbus-names.h>
 
-typedef struct {
-  GtkWidget *time_label;
-  GtkWidget *date_label;
-} vtklockts;
+#include "gp-tklock.h"
+#include "visual-tklock.h"
 
 typedef struct {
-  guint count;
-  guint hint;
-}event_t;
-
-typedef struct {
-  GtkWidget *window;
-  vtklockts ts;
-  GtkWidget *slider;
-  guint slider_status;
-  gdouble slider_value;
-  GtkAdjustment *slider_adjustment;
-  DBusConnection *systemui_conn;
-  int priority;
-  guint update_date_time_cb_tag;
-  void(*unlock_handler)();
-  event_t event[6];
-  gulong slider_value_changed_id;
-  gulong slider_change_value_id;
-}vtklock_t;
-
-typedef struct{
   system_ui_data *data;
-  void (*one_input_mode_finished_handler)();
-  guint one_input_mode_event;
-  tklock_mode mode;
+  system_ui_callback_t sysui_cb;
+  gp_tklock_t *gp_tklock;
   vtklock_t *vtklock;
+  int field_1C;
 } tklock_plugin_data;
 
 #endif /* _SYSTEMUI_TKLOCK_PRIVATE_H */
