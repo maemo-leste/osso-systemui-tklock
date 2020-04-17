@@ -21,6 +21,7 @@ Package: osso-systemui-tklock
 Architecture: any
 Depends:
  ${misc:Depends},
+ ${shlibs:Depends},
  osso-systemui (>= 0.2.0),
  osso-powerup-shutdown-l10n-mr0 | osso-powerup-shutdown-l10n-mr,
  hildon-libs-l10n-mr | hildon-libs-l10n-mr0,
