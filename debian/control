@@ -14,6 +14,7 @@ Build-Depends:
  libtime-dev,
  libsqlite3-dev,
  osso-systemui-dev (>= 0.2.0),
+ mce-dev,
 Priority: optional
 Standards-Version: 4.3.0
 
