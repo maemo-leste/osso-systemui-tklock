@@ -559,8 +559,16 @@ make_timestamp_box(vtklockts *ts, gboolean portrait)
   gtk_box_pack_start(GTK_BOX(time_box), time_label, TRUE, TRUE, 0);
   gtk_box_pack_start(GTK_BOX(date_box), date_label, TRUE, TRUE, 0);
 
-  gtk_box_pack_start(GTK_BOX(box), time_box, FALSE, FALSE, 0);
-  gtk_box_pack_start(GTK_BOX(box), date_box, FALSE, FALSE, 0);
+  if (portrait)
+  {
+    gtk_box_pack_start(GTK_BOX(box), date_box, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(box), time_box, FALSE, FALSE, 0);
+  }
+  else
+  {
+    gtk_box_pack_start(GTK_BOX(box), time_box, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(box), date_box, FALSE, FALSE, 0);
+  }
 
   ts->time_label = time_label;
   ts->date_label = date_label;
