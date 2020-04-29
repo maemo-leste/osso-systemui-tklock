@@ -1,3 +1,9 @@
+osso-systemui-tklock (0.4.1) unstable; urgency=low
+
+  *  Fix visual unlock date/time order when in portrait
+
+ -- Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>  Wed, 29 Apr 2020 11:29:23 +0300
+
 osso-systemui-tklock (0.4.0) unstable; urgency=low
 
   * RE it again
