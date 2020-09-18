@@ -835,7 +835,7 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
   if (gc && gconf_client_get_bool(gc, "/system/systemui/tklock/auto_rotation", NULL) )
   {
     /* Check if we have force_fake_portrait lockslider background */
-    if (access("/etc/hildon/theme/backgrounds/lockslider-portrait.png", 0600) == 0)
+    if (access("/etc/hildon/theme/backgrounds/lockslider-portrait.png", R_OK) == 0)
     {
       hildon_gtk_window_set_portrait_flags(GTK_WINDOW(vtklock->window), HILDON_PORTRAIT_MODE_SUPPORT);
       g_signal_connect(G_OBJECT(vtklock->window), "configure-event", G_CALLBACK(configure_event_cb), vtklock);
