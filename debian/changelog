@@ -1,3 +1,9 @@
+osso-systemui-tklock (0.4.2) unstable; urgency=low
+
+  * Fix access() check for portrait background theme files
+
+ -- Merlijn Wajer <merlijn@wizzup.org>  Fri, 18 Sep 2020 13:59:39 +0200
+
 osso-systemui-tklock (0.4.1) unstable; urgency=low
 
   *  Fix visual unlock date/time order when in portrait
