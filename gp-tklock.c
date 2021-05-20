@@ -31,6 +31,7 @@
 #include <systemui/tklock-dbus-names.h>
 
 #include "gp-tklock.h"
+#include "tklock-grab.h"
 
 static guint try_grab_count = 0;
 
@@ -78,16 +79,12 @@ gp_tklock_try_grab(gpointer user_data)
 
   g_assert(gp_tklock != NULL);
 
-  gdk_pointer_ungrab(0);
-  gdk_keyboard_ungrab(0);
+  tklock_grab_release();
 
   if (try_grab_count)
     gtk_window_close_other_temporaries(GTK_WINDOW(gp_tklock->window));
 
-  if (gdk_pointer_grab(gp_tklock->window->window, FALSE,
-                       GDK_BUTTON_RELEASE_MASK | GDK_BUTTON_PRESS_MASK, NULL,
-                       NULL, 0) != GDK_GRAB_SUCCESS ||
-      gdk_keyboard_grab(gp_tklock->window->window, TRUE, 0) != GDK_GRAB_SUCCESS)
+  if (!tklock_grab_try(gp_tklock->window->window, NULL))
   {
     if (++try_grab_count > 3)
     {
@@ -127,11 +124,8 @@ gp_tklock_map_cb(GtkWidget *widget, GdkEvent *event, gp_tklock_t *gp_tklock)
     gp_tklock->grab_status = TKLOCK_GRAB_FAILED;
     gp_tklock->one_input = FALSE;
   }
-  else if ((gdk_pointer_grab(widget->window, FALSE,
-                             GDK_BUTTON_RELEASE_MASK | GDK_BUTTON_PRESS_MASK,
-                             gp_tklock->window->window, NULL, 0) !=
-                                                             GDK_GRAB_SUCCESS ||
-            gdk_keyboard_grab(widget->window, TRUE, 0) != GDK_GRAB_SUCCESS) &&
+  else if (!tklock_grab_try(widget->window, FALSE, GP_TKLOCK_EVENT_MASK,
+                           gp_tklock->window->window) &&
            !gp_tklock->grab_notify)
   {
     gp_tklock->grab_notify = g_timeout_add(200, gp_tklock_try_grab, gp_tklock);
@@ -146,7 +140,7 @@ gp_tklock_map_cb(GtkWidget *widget, GdkEvent *event, gp_tklock_t *gp_tklock)
 }
 
 static void
-release_grabs(gp_tklock_t *gp_tklock)
+gp_tklock_remove_grab_notify(gp_tklock_t *gp_tklock)
 {
   SYSTEMUI_DEBUG_FN;
 
@@ -157,9 +151,15 @@ release_grabs(gp_tklock_t *gp_tklock)
     g_source_remove(gp_tklock->grab_notify);
     gp_tklock->grab_notify = 0;
   }
+}
 
-  gdk_pointer_ungrab(0);
-  gdk_keyboard_ungrab(0);
+static void
+release_grabs(gp_tklock_t *gp_tklock)
+{
+  SYSTEMUI_DEBUG_FN;
+
+  gp_tklock_remove_grab_notify(gp_tklock);
+  tklock_grab_release();
   gtk_grab_remove(gp_tklock->window);
 }
 
@@ -347,11 +347,7 @@ gp_tklock_disable_lock(gp_tklock_t *gp_tklock)
 
   g_assert(gp_tklock != NULL);
 
-  if (gp_tklock->grab_notify)
-  {
-    g_source_remove(gp_tklock->grab_notify);
-    gp_tklock->grab_notify = 0;
-  }
+  gp_tklock_remove_grab_notify(gp_tklock);
 
   if (gp_tklock->grab_status == TKLOCK_GRAB_ENABLED)
   {
