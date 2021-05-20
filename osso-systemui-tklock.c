@@ -274,17 +274,7 @@ tklock_open(const char *interface, const char *method, GArray *args,
       visual_tklock_present_view(plugin_data->vtklock);
 
       if (mode == TKLOCK_ENABLE)
-      {
-        gp_tklock_t *gp_tklock = plugin_data->gp_tklock;
-
-        if (gp_tklock->grab_notify)
-        {
-          g_source_remove(gp_tklock->grab_notify);
-          gp_tklock->grab_notify = 0;
-        }
-
-        gp_tklock_disable_lock(gp_tklock);
-      }
+        gp_tklock_disable_lock(plugin_data->gp_tklock);
 
       mode = TKLOCK_ENABLE_VISUAL;
       break;
