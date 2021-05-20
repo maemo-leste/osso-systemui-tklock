@@ -25,11 +25,18 @@
 #ifndef __GP_LOCK_H_INCLUDED__
 #define __GP_LOCK_H_INCLUDED__
 
+typedef enum
+{
+  TKLOCK_GRAB_DISABLED,
+  TKLOCK_GRAB_ENABLED,
+  TKLOCK_GRAB_FAILED
+} tklock_grab_status;
+
 typedef struct
 {
   GtkWidget *window;
   guint grab_notify;
-  int grab_status;
+  tklock_grab_status grab_status;
   gboolean one_input;
   int one_input_status;
   void (*one_input_mode_finished_handler)();
