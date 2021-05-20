@@ -96,7 +96,7 @@ gp_tklock_try_grab(gpointer user_data)
       gp_tklock_unlock(gp_tklock->systemui_conn);
       gp_tklock->grab_notify = 0;
       try_grab_count = 0;
-      gp_tklock->grab_status = 2;
+      gp_tklock->grab_status = TKLOCK_GRAB_FAILED;
       gp_tklock->one_input = FALSE;
     }
     else
@@ -105,7 +105,7 @@ gp_tklock_try_grab(gpointer user_data)
   else
   {
     gp_tklock->grab_notify = 0;
-    gp_tklock->grab_status = 1;
+    gp_tklock->grab_status = TKLOCK_GRAB_ENABLED;
     gtk_grab_add(gp_tklock->window);
   }
 
@@ -124,7 +124,7 @@ gp_tklock_map_cb(GtkWidget *widget, GdkEvent *event, gp_tklock_t *gp_tklock)
     SYSTEMUI_ERROR("GRAB FAILED (systemui grab), gp_tklock can't be enabled\n"
                    "request display unblank");
     gp_tklock_unlock(gp_tklock->systemui_conn);
-    gp_tklock->grab_status = 2;
+    gp_tklock->grab_status = TKLOCK_GRAB_FAILED;
     gp_tklock->one_input = FALSE;
   }
   else if ((gdk_pointer_grab(widget->window, FALSE,
@@ -138,7 +138,7 @@ gp_tklock_map_cb(GtkWidget *widget, GdkEvent *event, gp_tklock_t *gp_tklock)
   }
   else
   {
-    gp_tklock->grab_status = 1;
+    gp_tklock->grab_status = TKLOCK_GRAB_ENABLED;
     gtk_grab_add(gp_tklock->window);
   }
 
@@ -330,7 +330,7 @@ gp_tklock_init(DBusConnection *conn)
 
     gp_tklock->systemui_conn = conn;
     gp_tklock_create_window(gp_tklock);
-    gp_tklock->grab_status = 0;
+    gp_tklock->grab_status = TKLOCK_GRAB_DISABLED;
     gp_tklock->grab_notify = 0;
     gp_tklock->disabled = TRUE;
   }
@@ -353,10 +353,10 @@ gp_tklock_disable_lock(gp_tklock_t *gp_tklock)
     gp_tklock->grab_notify = 0;
   }
 
-  if (gp_tklock->grab_status == 1)
+  if (gp_tklock->grab_status == TKLOCK_GRAB_ENABLED)
   {
     release_grabs(gp_tklock);
-    gp_tklock->grab_status = 0;
+    gp_tklock->grab_status = TKLOCK_GRAB_DISABLED;
   }
 
   if (!gp_tklock->disabled)
