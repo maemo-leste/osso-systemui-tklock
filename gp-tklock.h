@@ -32,13 +32,20 @@ typedef enum
   TKLOCK_GRAB_FAILED
 } tklock_grab_status;
 
+typedef enum
+{
+  TKLOCK_ONE_INPUT_DISABLED,
+  TKLOCK_ONE_INPUT_BUTTON_PRESSED,
+  TKLOCK_ONE_INPUT_BUTTON_RELEASED
+} tklock_one_input_status;
+
 typedef struct
 {
   GtkWidget *window;
   guint grab_notify;
   tklock_grab_status grab_status;
   gboolean one_input;
-  int one_input_status;
+  tklock_one_input_status one_input_status;
   void (*one_input_mode_finished_handler)();
   gulong btn_press_id;
   gulong btn_release_id;
