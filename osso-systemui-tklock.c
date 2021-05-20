@@ -222,6 +222,7 @@ tklock_open(const char *interface, const char *method, GArray *args,
   }
 
   SYSTEMUI_DEBUG("hargs[4].data.u32[%u]", hargs[4].data.u32);
+  SYSTEMUI_DEBUG("mode [%u]", mode);
 
   switch (hargs[4].data.u32)
   {
@@ -345,17 +346,17 @@ tklock_close(const char *interface, const char *method, GArray *args,
   system_ui_handler_arg *hargs = ((system_ui_handler_arg *)args->data);
   int supported_args[] = {'b'};
   gp_tklock_t *gp_tklock;
-  dbus_bool_t locked;
+  dbus_bool_t silent;
 
   SYSTEMUI_DEBUG_FN;
 
   if (check_plugin_arguments(args, supported_args, 1))
   {
-    locked = hargs[4].data.bool_val;
+    silent = hargs[4].data.bool_val;
     SYSTEMUI_DEBUG("hargs[4].data.bool_val[%u]", hargs[4].data.bool_val);
   }
   else
-    locked = TRUE;
+    silent = TRUE;
 
   ee_destroy_window();
   tklock_destroy_locks_timeout_remove();
@@ -378,9 +379,10 @@ tklock_close(const char *interface, const char *method, GArray *args,
     {
       g_signal_handler_is_connected(gp_tklock->window, gp_tklock->btn_press_id);
 
-      if (!(gp_tklock->one_input_status == TKLOCK_ONE_INPUT_BUTTON_RELEASED ||
-            locked))
+      if (gp_tklock->one_input_status != TKLOCK_ONE_INPUT_BUTTON_RELEASED ||
+          !silent)
       {
+        SYSTEMUI_DEBUG("Keeping systemui callback");
         return DBUS_TYPE_VARIANT;
       }
     }
