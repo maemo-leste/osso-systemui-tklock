@@ -244,7 +244,7 @@ tklock_open(const char *interface, const char *method, GArray *args,
       }
 
       gp_tklock->one_input = TRUE;
-      gp_tklock->one_input_status = 0;
+      gp_tklock->one_input_status = TKLOCK_ONE_INPUT_DISABLED;
       gp_tklock_enable_lock(gp_tklock);
       mode = TKLOCK_ONEINPUT;
       break;
@@ -372,11 +372,14 @@ tklock_close(const char *interface, const char *method, GArray *args,
     {
       g_signal_handler_is_connected(gp_tklock->window, gp_tklock->btn_press_id);
 
-      if (!(gp_tklock->one_input_status == 2 || locked))
+      if (!(gp_tklock->one_input_status == TKLOCK_ONE_INPUT_BUTTON_RELEASED ||
+            locked))
+      {
         return DBUS_TYPE_VARIANT;
+      }
     }
 
-    gp_tklock->one_input_status = 0;
+    gp_tklock->one_input_status = TKLOCK_ONE_INPUT_DISABLED;
 
     SYSTEMUI_DEBUG("gp_tklock->disabled %d", gp_tklock->disabled);
 

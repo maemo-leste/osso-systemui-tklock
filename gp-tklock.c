@@ -200,10 +200,10 @@ gp_tklock_button_release_event_cb(GtkWidget *widget, GdkEvent *event,
     if (event->type == GDK_BUTTON_RELEASE)
     {
       ee_one_input_mode_finished(gp_tklock);
-      gp_tklock->one_input_status = 2;
+      gp_tklock->one_input_status = TKLOCK_ONE_INPUT_BUTTON_RELEASED;
     }
     else if (event->type == GDK_BUTTON_PRESS)
-      gp_tklock->one_input_status = 1;
+      gp_tklock->one_input_status = TKLOCK_ONE_INPUT_BUTTON_PRESSED;
   }
 
   return TRUE;
