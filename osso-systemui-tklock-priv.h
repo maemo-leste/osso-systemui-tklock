@@ -34,7 +34,6 @@ typedef struct {
   system_ui_callback_t sysui_cb;
   gp_tklock_t *gp_tklock;
   vtklock_t *vtklock;
-  int field_1C;
 } tklock_plugin_data;
 
 #endif /* _SYSTEMUI_TKLOCK_PRIVATE_H */
