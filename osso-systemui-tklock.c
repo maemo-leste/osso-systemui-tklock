@@ -41,7 +41,7 @@
   "member='display_status_ind'"
 
 tklock_plugin_data *plugin_data = NULL;
-system_ui_callback_t system_ui_callback = {0,};
+system_ui_callback_t system_ui_callback = {};
 static gboolean display_off = FALSE;
 static guint destroy_locks_id = 0;
 static Window ee_window = 0;
@@ -157,7 +157,8 @@ vtklock_unlock_handler()
 {
   SYSTEMUI_DEBUG_FN;
 
-  systemui_do_callback(plugin_data->data, &plugin_data->sysui_cb, 1);
+  systemui_do_callback(plugin_data->data, &plugin_data->sysui_cb,
+                       TKLOCK_UNLOCK);
 }
 
 static void
@@ -165,8 +166,10 @@ gp_tklock_unlock_handler()
 {
   SYSTEMUI_DEBUG_FN;
 
-  systemui_do_callback(plugin_data->data, &plugin_data->sysui_cb, 1);
-  systemui_do_callback(plugin_data->data, &plugin_data->sysui_cb, 4);
+  systemui_do_callback(plugin_data->data, &plugin_data->sysui_cb,
+                       TKLOCK_UNLOCK);
+  systemui_do_callback(plugin_data->data, &plugin_data->sysui_cb,
+                       TKLOCK_CLOSED);
   systemui_free_callback(&plugin_data->sysui_cb);
 }
 
@@ -290,7 +293,10 @@ tklock_open(const char *interface, const char *method, GArray *args,
       gp_tklock_t *gp_tklock;
 
       if (mode == TKLOCK_ONEINPUT)
-        do_callback(plugin_data->data, &plugin_data->sysui_cb, 4);
+      {
+        systemui_do_callback(plugin_data->data, &plugin_data->sysui_cb,
+                             TKLOCK_CLOSED);
+      }
       else if (mode == TKLOCK_ENABLE_VISUAL)
       {
         vtklock_t *vtklock = plugin_data->vtklock;
