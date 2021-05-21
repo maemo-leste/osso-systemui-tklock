@@ -57,7 +57,7 @@ void gp_tklock_create_window(gp_tklock_t *gp_tklock);
 void gp_tklock_enable_lock(gp_tklock_t *gp_tklock);
 gp_tklock_t *gp_tklock_init(DBusConnection *conn);
 void gp_tklock_destroy_lock(gp_tklock_t *gp_tklock);
-void gp_tklock_disable_lock(gp_tklock_t *gp_tklock);
+void gp_tklock_disable_lock(gp_tklock_t *gp_tklock, gboolean release_gdk_grabs);
 void gp_tklock_destroy(gp_tklock_t *gp_tklock);
 void gp_tklock_set_one_input_mode_handler(gp_tklock_t *gp_tklock,
                                           void (*handler)());
