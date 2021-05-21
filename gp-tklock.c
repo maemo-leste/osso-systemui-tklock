@@ -91,7 +91,7 @@ gp_tklock_map_cb(GtkWidget *widget, GdkEvent *event, gp_tklock_t *gp_tklock)
     gp_tklock->grab_status = TKLOCK_GRAB_FAILED;
     gp_tklock->one_input = FALSE;
   }
-  else if (tklock_grab_try(widget->window, FALSE, GP_TKLOCK_EVENT_MASK,
+  else if (!tklock_grab_try(widget->window, FALSE, GP_TKLOCK_EVENT_MASK,
                            gp_tklock->window->window) &&
            !gp_tklock->grab_notify)
   {
