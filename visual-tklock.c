@@ -180,7 +180,9 @@ visual_tklock_map_cb(GtkWidget *widget, GdkEvent *event, vtklock_t *vtklock)
 
   g_assert(vtklock != NULL);
 
-  if (!tklock_grab_try(vtklock->window->window, 0, vtklock->slider->window))
+  if (!tklock_grab_try(vtklock->window->window, TRUE,
+                       GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK,
+                       vtklock->window->window))
   {
     SYSTEMUI_ERROR("GRAB FAILED (systemui grab), visual tklock can't be "
                    "enabled, request display unblank");

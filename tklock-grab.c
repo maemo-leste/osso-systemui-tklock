@@ -23,12 +23,12 @@
 #include <mce/mode-names.h>
 
 gboolean
-tklock_grab_try(GdkWindow *window, GdkEventMask event_mask,
-                GdkWindow *confine_to)
+tklock_grab_try(GdkWindow *window, gboolean owner_events,
+                GdkEventMask event_mask, GdkWindow *confine_to)
 {
   GdkGrabStatus status;
 
-  status = gdk_pointer_grab(window, event_mask ? FALSE : TRUE, event_mask,
+  status = gdk_pointer_grab(window, owner_events, event_mask,
                             confine_to, NULL, GDK_CURRENT_TIME);
 
   if (status != GDK_GRAB_SUCCESS)
