@@ -20,7 +20,9 @@
 #ifndef __TKLOCK_GRAB_H__
 #define __TKLOCK_GRAB_H__
 
-gboolean tklock_grab_try(GdkWindow *window, GdkWindow *confine_to);
+gboolean tklock_grab_try(GdkWindow *window, GdkEventMask event_mask,
+                         GdkWindow *confine_to);
 void tklock_grab_release();
+void tklock_unlock(DBusConnection *conn);
 
 #endif /* __TKLOCK_GRAB_H__ */

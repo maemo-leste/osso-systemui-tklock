@@ -24,8 +24,6 @@
 
 #include <hildon/hildon.h>
 #include <dbus/dbus.h>
-#include <mce/dbus-names.h>
-#include <mce/mode-names.h>
 #include <syslog.h>
 #include <systemui.h>
 #include <systemui/tklock-dbus-names.h>
@@ -35,39 +33,7 @@
 
 static guint try_grab_count = 0;
 
-static void
-gp_tklock_unlock(DBusConnection *conn)
-{
-  DBusMessage *mcall;
-
-  SYSTEMUI_DEBUG_FN;
-
-  mcall = dbus_message_new_method_call(MCE_SERVICE, MCE_REQUEST_PATH,
-                                       MCE_REQUEST_IF, MCE_DISPLAY_ON_REQ);
-  if (mcall)
-  {
-    dbus_message_set_no_reply(mcall, TRUE);
-    dbus_connection_send(conn, mcall, NULL);
-    dbus_connection_flush(conn);
-    dbus_message_unref(mcall);
-  }
-
-  mcall = dbus_message_new_method_call(MCE_SERVICE, MCE_REQUEST_PATH,
-                                       MCE_REQUEST_IF,
-                                       MCE_TKLOCK_MODE_CHANGE_REQ);
-  if (mcall)
-  {
-    const char *unlocked = MCE_TK_UNLOCKED;
-
-    dbus_message_append_args(mcall,
-                             DBUS_TYPE_STRING, &unlocked,
-                             DBUS_TYPE_INVALID);
-    dbus_message_set_no_reply(mcall, TRUE);
-    dbus_connection_send(conn, mcall, NULL);
-    dbus_connection_flush(conn);
-    dbus_message_unref(mcall);
-  }
-}
+#define GP_TKLOCK_EVENT_MASK (GDK_BUTTON_RELEASE_MASK | GDK_BUTTON_PRESS_MASK)
 
 static gboolean
 gp_tklock_try_grab(gpointer user_data)
@@ -84,13 +50,13 @@ gp_tklock_try_grab(gpointer user_data)
   if (try_grab_count)
     gtk_window_close_other_temporaries(GTK_WINDOW(gp_tklock->window));
 
-  if (!tklock_grab_try(gp_tklock->window->window, NULL))
+  if (!tklock_grab_try(gp_tklock->window->window, GP_TKLOCK_EVENT_MASK, NULL))
   {
     if (++try_grab_count > 3)
     {
       SYSTEMUI_ERROR("GRAB FAILED, gp_tklock can't be enabled\n"
                      "request display unblank");
-      gp_tklock_unlock(gp_tklock->systemui_conn);
+      tklock_unlock(gp_tklock->systemui_conn);
       gp_tklock->grab_notify = 0;
       try_grab_count = 0;
       gp_tklock->grab_status = TKLOCK_GRAB_FAILED;
@@ -120,11 +86,12 @@ gp_tklock_map_cb(GtkWidget *widget, GdkEvent *event, gp_tklock_t *gp_tklock)
   {
     SYSTEMUI_ERROR("GRAB FAILED (systemui grab), gp_tklock can't be enabled\n"
                    "request display unblank");
-    gp_tklock_unlock(gp_tklock->systemui_conn);
+    tklock_unlock(gp_tklock->systemui_conn);
     gp_tklock->grab_status = TKLOCK_GRAB_FAILED;
     gp_tklock->one_input = FALSE;
   }
-  else if (tklock_grab_try(widget->window, gp_tklock->window->window) &&
+  else if (tklock_grab_try(widget->window, GP_TKLOCK_EVENT_MASK,
+                           gp_tklock->window->window) &&
            !gp_tklock->grab_notify)
   {
     gp_tklock->grab_notify = g_timeout_add(200, gp_tklock_try_grab, gp_tklock);
@@ -340,7 +307,7 @@ gp_tklock_init(DBusConnection *conn)
 }
 
 void
-gp_tklock_disable_lock(gp_tklock_t *gp_tklock)
+gp_tklock_disable_lock(gp_tklock_t *gp_tklock, gboolean release_grab)
 {
   SYSTEMUI_DEBUG_FN;
 
@@ -350,7 +317,9 @@ gp_tklock_disable_lock(gp_tklock_t *gp_tklock)
 
   if (gp_tklock->grab_status == TKLOCK_GRAB_ENABLED)
   {
-    release_grabs(gp_tklock);
+    if (release_grab)
+      release_grabs(gp_tklock);
+
     gp_tklock->grab_status = TKLOCK_GRAB_DISABLED;
   }
 
@@ -374,7 +343,7 @@ gp_tklock_destroy_lock(gp_tklock_t *gp_tklock)
   if (!gp_tklock)
     return;
 
-  gp_tklock_disable_lock(gp_tklock);
+  gp_tklock_disable_lock(gp_tklock, TRUE);
 
   gtk_widget_unrealize(gp_tklock->window);
   gtk_widget_destroy(gp_tklock->window);

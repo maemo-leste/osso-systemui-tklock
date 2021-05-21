@@ -16,6 +16,7 @@
 #include <stdlib.h>
 
 #include "visual-tklock.h"
+#include "tklock-grab.h"
 
 #define HILDON_BACKGROUNDS_DIR "/etc/hildon/theme/backgrounds/"
 #define LOCKSLIDER_BACKGROUND HILDON_BACKGROUNDS_DIR "lockslider.png"
@@ -172,6 +173,25 @@ change_value_cb(GtkRange *range, GtkScrollType scroll, gdouble value,
   return TRUE;
 }
 
+static gboolean
+visual_tklock_map_cb(GtkWidget *widget, GdkEvent *event, vtklock_t *vtklock)
+{
+  SYSTEMUI_DEBUG_FN;
+
+  g_assert(vtklock != NULL);
+
+  if (!tklock_grab_try(vtklock->window->window, 0, vtklock->slider->window))
+  {
+    SYSTEMUI_ERROR("GRAB FAILED (systemui grab), visual tklock can't be "
+                   "enabled, request display unblank");
+    tklock_unlock(vtklock->systemui_conn);
+  }
+  else if (gtk_grab_get_current())
+    gtk_grab_add(vtklock->window);
+
+  return TRUE;
+}
+
 void
 visual_tklock_present_view(vtklock_t *vtklock)
 {
@@ -181,13 +201,14 @@ visual_tklock_present_view(vtklock_t *vtklock)
 
   update_timestamp(&vtklock->ts);
 
-  if (gtk_grab_get_current())
-    gtk_grab_add(vtklock->window);
+  g_signal_connect_after(vtklock->window, "map-event",
+                         G_CALLBACK(visual_tklock_map_cb), vtklock);
 
   gtk_widget_realize(vtklock->window);
   gdk_flush();
+
   ipm_show_window(vtklock->window, vtklock->priority);
-  gdk_window_invalidate_rect(vtklock->window->window, 0, 1);
+  gdk_window_invalidate_rect(vtklock->window->window, NULL, TRUE);
   gdk_window_process_all_updates();
   gdk_flush();
 
@@ -837,8 +858,10 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
     /* Check if we have force_fake_portrait lockslider background */
     if (access("/etc/hildon/theme/backgrounds/lockslider-portrait.png", R_OK) == 0)
     {
-      hildon_gtk_window_set_portrait_flags(GTK_WINDOW(vtklock->window), HILDON_PORTRAIT_MODE_SUPPORT);
-      g_signal_connect(G_OBJECT(vtklock->window), "configure-event", G_CALLBACK(configure_event_cb), vtklock);
+      hildon_gtk_window_set_portrait_flags(GTK_WINDOW(vtklock->window),
+                                           HILDON_PORTRAIT_MODE_SUPPORT);
+      g_signal_connect(G_OBJECT(vtklock->window), "configure-event",
+                       G_CALLBACK(configure_event_cb), vtklock);
       fill_background(vtklock, force_fake_portrait, FALSE);
       force_fake_portrait = FALSE;
     }
