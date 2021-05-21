@@ -34,6 +34,7 @@
 #include <syslog.h>
 
 #include "osso-systemui-tklock-priv.h"
+#include "tklock-grab.h"
 
 #define DBUS_MCE_MATCH_RULE \
   "type='signal',path='/com/nokia/mce/signal'," \
@@ -271,10 +272,10 @@ tklock_open(const char *interface, const char *method, GArray *args,
         visual_tklock_set_unlock_handler(vtklock, vtklock_unlock_handler);
       }
 
-      visual_tklock_present_view(plugin_data->vtklock);
+      visual_tklock_present_view(vtklock);
 
       if (mode == TKLOCK_ENABLE)
-        gp_tklock_disable_lock(plugin_data->gp_tklock);
+        gp_tklock_disable_lock(plugin_data->gp_tklock, FALSE);
 
       mode = TKLOCK_ENABLE_VISUAL;
       break;
