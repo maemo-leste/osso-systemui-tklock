@@ -444,6 +444,7 @@ visual_tklock_destroy_lock(vtklock_t *vtklock)
     vtklock->update_timestamp_id = 0;
   }
 
+  gtk_grab_remove(vtklock->window);
   ipm_hide_window(vtklock->window);
   gtk_widget_unrealize(vtklock->window);
   gtk_widget_destroy(vtklock->window);

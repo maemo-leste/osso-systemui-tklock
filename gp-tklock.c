@@ -121,7 +121,7 @@ gp_tklock_remove_grab_notify(gp_tklock_t *gp_tklock)
 }
 
 static void
-release_grabs(gp_tklock_t *gp_tklock)
+gp_tklock_release_grabs(gp_tklock_t *gp_tklock)
 {
   SYSTEMUI_DEBUG_FN;
 
@@ -149,7 +149,7 @@ ee_one_input_mode_finished(gp_tklock_t *gp_tklock)
   else
     gp_tklock->one_input_mode_finished_handler();
 
-  release_grabs(gp_tklock);
+  gp_tklock_release_grabs(gp_tklock);
 
   return 0;
 }
@@ -308,7 +308,7 @@ gp_tklock_init(DBusConnection *conn)
 }
 
 void
-gp_tklock_disable_lock(gp_tklock_t *gp_tklock, gboolean release_grab)
+gp_tklock_disable_lock(gp_tklock_t *gp_tklock, gboolean release_gdk_grabs)
 {
   SYSTEMUI_DEBUG_FN;
 
@@ -318,8 +318,10 @@ gp_tklock_disable_lock(gp_tklock_t *gp_tklock, gboolean release_grab)
 
   if (gp_tklock->grab_status == TKLOCK_GRAB_ENABLED)
   {
-    if (release_grab)
-      release_grabs(gp_tklock);
+    if (release_gdk_grabs)
+      gp_tklock_release_grabs(gp_tklock);
+    else
+      gtk_grab_remove(gp_tklock->window);
 
     gp_tklock->grab_status = TKLOCK_GRAB_DISABLED;
   }
