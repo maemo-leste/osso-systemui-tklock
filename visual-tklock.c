@@ -943,7 +943,6 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
             GTK_BOX(label_packer), icon_packer_align, FALSE, FALSE, 0);
     }
 
-    window_align = gtk_alignment_new(0.5, 0.5, 0, 0);
     gtk_alignment_set_padding(GTK_ALIGNMENT(window_align), 8, 24, 1, 0);
   }
   else
@@ -959,7 +958,6 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
     }
 
     gtk_box_pack_end(GTK_BOX(label_packer), label_align, FALSE, FALSE, 0);
-    window_align = gtk_alignment_new(0.5, 0.5, 0, 0);
     gtk_alignment_set_padding(GTK_ALIGNMENT(window_align), 0, 0, 0, 16);
   }
 
