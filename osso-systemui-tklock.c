@@ -421,8 +421,6 @@ tklock_setup_plugin(system_ui_data *data)
 gboolean
 plugin_init(system_ui_data *data)
 {
-  openlog("systemui-tklock", LOG_ALERT | LOG_USER, LOG_NDELAY);
-
   SYSTEMUI_DEBUG_FN;
 
   if (!data)
@@ -446,8 +444,8 @@ plugin_close(system_ui_data *data)
 
   if (data)
   {
-    systemui_remove_handler("tklock_open", data);
-    systemui_remove_handler("tklock_close", data);
+    systemui_remove_handler(SYSTEMUI_TKLOCK_OPEN_REQ, data);
+    systemui_remove_handler(SYSTEMUI_TKLOCK_CLOSE_REQ, data);
   }
 
   gp_tklock_destroy_lock(plugin_data->gp_tklock);
@@ -455,5 +453,4 @@ plugin_close(system_ui_data *data)
 
   g_slice_free(tklock_plugin_data, plugin_data);
   plugin_data = NULL;
-  closelog();
 }
