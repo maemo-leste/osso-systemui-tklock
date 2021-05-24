@@ -21,6 +21,7 @@
 #define HILDON_BACKGROUNDS_DIR "/etc/hildon/theme/backgrounds/"
 #define LOCKSLIDER_BACKGROUND HILDON_BACKGROUNDS_DIR "lockslider.png"
 #define LOCKSLIDER_PORTRAIT_BACKGROUND HILDON_BACKGROUNDS_DIR "lockslider-portrait.png"
+#define TKLOCK_AUTO_ROTATION "/system/systemui/tklock/auto_rotation"
 
 #define DBUS_CLOCKD_MATCH_RULE \
   "type='signal',sender='com.nokia.clockd'," \
@@ -601,13 +602,15 @@ make_timestamp_box(vtklockts *ts, gboolean portrait)
 }
 
 static GtkWidget *
-visual_tklock_create_slider(gboolean portrait)
+visual_tklock_create_slider(gboolean portrait, gboolean rotated)
 {
   GtkWidget *slider;
   gint width;
 
-  if (!portrait)
+  if (!portrait || rotated)
+  {
     width = (gdk_screen_get_width(gdk_screen_get_default()) * 440) / 800;
+  }
   else
     width = (gdk_screen_get_height(gdk_screen_get_default()) * 440) / 800;
 
@@ -836,6 +839,7 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
   GtkWidget *label;
   GtkWidget *timestamp_packer;
   gboolean force_fake_portrait;
+  gboolean rotated = FALSE;
   GtkRequisition sr;
   GConfClient *gc;
 
@@ -856,10 +860,10 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
   gc = gconf_client_get_default();
 
   /* check if autorotation is enabled */
-  if (gc && gconf_client_get_bool(gc, "/system/systemui/tklock/auto_rotation", NULL) )
+  if (gc && gconf_client_get_bool(gc, TKLOCK_AUTO_ROTATION, FALSE))
   {
     /* Check if we have force_fake_portrait lockslider background */
-    if (access("/etc/hildon/theme/backgrounds/lockslider-portrait.png", R_OK) == 0)
+    if (!access(LOCKSLIDER_PORTRAIT_BACKGROUND, R_OK))
     {
       hildon_gtk_window_set_portrait_flags(GTK_WINDOW(vtklock->window),
                                            HILDON_PORTRAIT_MODE_SUPPORT);
@@ -867,6 +871,7 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
                        G_CALLBACK(configure_event_cb), vtklock);
       fill_background(vtklock, force_fake_portrait, FALSE);
       force_fake_portrait = FALSE;
+      rotated = TRUE;
     }
     else
       fill_background(vtklock, FALSE, force_fake_portrait);
@@ -877,7 +882,7 @@ visual_tklock_create_view_whimsy(vtklock_t *vtklock)
   if (gc)
     g_object_unref(gc);
 
-  vtklock->slider = visual_tklock_create_slider(force_fake_portrait);
+  vtklock->slider = visual_tklock_create_slider(force_fake_portrait, rotated);
   vtklock->slider_status = 1;
 
   slider_align = gtk_alignment_new(0.5, 0.5, 0.0, 0.0);
