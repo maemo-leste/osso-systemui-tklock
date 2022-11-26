@@ -1,3 +1,5 @@
+CFLAGS += -Wno-error=deprecated-declarations
+
 all: libsystemuiplugin_tklock.so
 
 clean:

@@ -1,3 +1,8 @@
+osso-systemui-tklock (0.5.2) unstable; urgency=low
+  * Changed cflags for compatibility with GCC 10+
+
+ -- Blagovest Petrov <blagovest@petrovs.info> Sat, 26 Nov 2022 02:23:32 +0300
+
 osso-systemui-tklock (0.5.1) unstable; urgency=low
 
   * Do not override log ident set by systemui
